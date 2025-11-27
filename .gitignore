@@ -1,0 +1,67 @@
+# ---------------------------
+#   Python
+# ---------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyd
+*.egg-info/
+*.so
+
+# ---------------------------
+#   Environnement virtuel
+# ---------------------------
+venv/
+.env/
+.venv/
+
+# Poetry
+.poetry/
+poetry.lock
+
+# Pipenv
+Pipfile
+Pipfile.lock
+
+# ---------------------------
+#   FastAPI / Uvicorn
+# ---------------------------
+*.log
+
+# Static & uploads
+static/
+media/
+
+# ---------------------------
+#   Docker
+# ---------------------------
+# Ignore Docker build artifacts
+docker-compose.override.yml
+docker-data/
+*.pid
+
+# ---------------------------
+#   IDE / Editors
+# ---------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---------------------------
+#   OS Specific
+# ---------------------------
+.DS_Store
+Thumbs.db
+
+# ---------------------------
+#   Test / Coverage
+# ---------------------------
+htmlcov/
+coverage.xml
+.pytest_cache/
+.tox/
+.nox/
+.mypy_cache/
+.cache/
