@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
 from datetime import datetime
-from . import models
+from app.db. import models
 
 def get_transactions_by_month(db: Session, year: int, month: int):
     """
