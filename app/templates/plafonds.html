@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="fr">
+ <head>
+  <meta charset="UTF-8">
+  <title>Gestion de Dépenses</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script><!-- Canva SDKs -->
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    /* Focus visible pour l’accessibilité */
+    :focus-visible {
+      outline: 3px solid #f97316;
+      outline-offset: 2px;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="w-full h-full">
+  <header class="w-full">
+   <div class="app-wrapper min-h-full w-full flex items-stretch justify-center bg-slate-900 py-6 px-4">
+    <div id="app-root" class="main-content w-full max-w-5xl rounded-2xl bg-slate-800/80 shadow-xl border border-slate-700 flex flex-col gap-6 p-6"><!-- En-tête -->
+     <section class="w-full" aria-labelledby="main-title">
+      <div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3">
+       <div>
+        <h1 id="main-title" class="text-2xl font-semibold text-white tracking-tight">Gestion des dépenses</h1>
+        <p id="subtitle" class="mt-1 text-sm text-slate-300">Suivez vos plafonds et vos dépenses par catégorie.</p>
+       </div>
+       <div class="inline-flex items-center gap-2 bg-slate-700/70 rounded-full px-3 py-1"><span class="inline-flex h-2 w-2 rounded-full bg-emerald-400"></span> <span class="text-xs text-slate-100 font-medium">Mois en cours</span>
+       </div>
+      </div>
+     </section>
+     <main class="w-full flex flex-col lg:flex-row gap-6" aria-label="Gestion des dépenses"><!-- Colonne gauche : formulaire catégories / plafonds / dépenses -->
+      <section class="w-full lg:w-1/2 flex flex-col gap-4" aria-labelledby="categories-title">
+       <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-4">
+        <h2 id="categories-title" class="text-lg font-semibold text-white mb-3">Catégories et plafonds</h2><!-- Sélecteur de catégorie -->
+        <div class="mb-3"><label for="category-select" class="block text-sm font-medium text-slate-200 mb-1"> Catégorie de dépense </label> <select id="category-select" name="category-select" class="w-full rounded-lg border border-slate-600 bg-slate-800/80 text-slate-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400"> <!-- Options remplies en JS --> </select>
+         <p class="mt-1 text-xs text-slate-400">Choisissez une catégorie, puis ajustez son plafond ou ajoutez des dépenses.</p>
+        </div><!-- Plafond pour la catégorie sélectionnée -->
+        <form id="limit-form" class="space-y-3" aria-label="Formulaire de plafond">
+         <div><label for="limit-input" class="block text-sm font-medium text-slate-200 mb-1"> Plafond mensuel (€) </label>
+          <div class="flex items-center gap-2"><input id="limit-input" name="limit-input" type="number" min="0" step="1" class="flex-1 rounded-lg border border-slate-600 bg-slate-800/80 text-slate-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400" aria-describedby="limit-help"> <button type="submit" id="save-limit-btn" class="inline-flex items-center justify-center rounded-lg bg-orange-500 text-white text-sm font-medium px-3 py-2 shadow-sm hover:bg-orange-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"> Enregistrer </button>
+          </div>
+          <p id="limit-help" class="mt-1 text-xs text-slate-400">Modifiez le plafond pour la catégorie sélectionnée.</p>
+         </div>
+        </form>
+       </div>
+      </section><!-- Colonne droite : Dashboard -->
+      <section class="w-full lg:w-1/2 flex flex-col gap-3" aria-labelledby="dashboard-title">
+       <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-4 flex-1 flex flex-col">
+        <div class="flex items-center justify-between gap-2 mb-2">
+         <h2 id="dashboard-title" class="text-lg font-semibold text-white">Vue d'ensemble</h2>
+         <div class="flex items-center gap-2 text-xs text-slate-300"><span class="inline-flex items-center gap-1"> <span class="inline-block w-3 h-3 rounded-sm bg-emerald-400"></span> Utilisé </span> <span class="inline-flex items-center gap-1"> <span class="inline-block w-3 h-3 rounded-sm bg-slate-600"></span> Plafond </span>
+         </div>
+        </div><!-- Zone du chart -->
+        <div class="relative flex-1 flex flex-col gap-3 overflow-hidden mt-1">
+         <div id="chart-container" class="flex-1 flex flex-col gap-3 justify-center" role="img" aria-label="Barres représentant le montant dépensé et le plafond par catégorie"><!-- Lignes du chart créées en JS -->
+         </div>
+        </div>
+       </div><!-- Messages & erreurs -->
+       <div id="message-box" class="rounded-xl bg-slate-900/60 border border-slate-700 p-3 text-xs text-slate-200 hidden" aria-live="polite"></div>
+      </section>
+     </main><!-- Section Dashboards supplémentaires -->
+     <section class="w-full" aria-labelledby="analytics-title">
+      <h2 id="analytics-title" class="text-xl font-semibold text-white mb-4">Statistiques détaillées</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- Chart 1: Dépenses par catégorie (barres verticales) -->
+       <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-4">
+        <h3 class="text-sm font-semibold text-slate-100 mb-3">Dépenses par catégorie</h3>
+        <div class="h-64 flex items-end justify-around gap-2 px-2">
+         <div id="vertical-chart" class="w-full h-full flex items-end justify-around gap-3"><!-- Barres verticales créées en JS -->
+         </div>
+        </div>
+       </div><!-- Chart 2: Taux d'utilisation (barres horizontales) -->
+       <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-4">
+        <h3 class="text-sm font-semibold text-slate-100 mb-3">Taux d'utilisation des plafonds</h3>
+        <div class="h-64 flex flex-col justify-center gap-4 px-2">
+         <div id="usage-chart" class="w-full flex flex-col gap-3"><!-- Barres horizontales créées en JS -->
+         </div>
+        </div>
+       </div><!-- Chart 3: Ratio dépensé vs restant -->
+       <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-4 lg:col-span-2">
+        <h3 class="text-sm font-semibold text-slate-100 mb-3">Répartition : Dépensé vs Restant</h3>
+        <div class="flex items-center gap-3 text-xs text-slate-300 mb-3"><span class="inline-flex items-center gap-1"> <span class="inline-block w-3 h-3 rounded-sm bg-gradient-to-r from-blue-500 to-blue-600"></span> Dépensé </span> <span class="inline-flex items-center gap-1"> <span class="inline-block w-3 h-3 rounded-sm bg-slate-700"></span> Restant </span>
+        </div>
+        <div class="flex flex-col gap-4 px-2">
+         <div id="ratio-chart" class="w-full flex flex-col gap-4"><!-- Barres de ratio créées en JS -->
+         </div>
+        </div>
+       </div>
+      </div>
+     </section>
+    </div>
+   </div>
+  </header>
+  <footer class="w-full">
+   <div class="max-w-5xl mx-auto px-4 pb-4 flex justify-end">
+    <p id="footer-text" class="text-[11px] text-slate-500">Exemple de dashboard de gestion de dépenses.</p>
+   </div>
+  </footer>
+  <script>
+    // --------- CONFIG / ELEMENT SDK (couleurs, texte, typo) ---------
+    const defaultConfig = {
+      // Couleurs (max 5)
+      background_color: "#020617",       // BACKGROUND
+      surface_color: "#020617",          // SECONDARY_SURFACE (on joue sur l’opacité en CSS)
+      text_color: "#e5e7eb",             // TEXT (gris très clair)
+      primary_action_color: "#22c55e",   // PRIMARY_ACTION (bouton vert)
+      secondary_action_color: "#f97316", // SECONDARY_ACTION (orange)
+
+      // Police & taille
+      font_family: "Inter",
+      font_size: 14,
+
+      // Textes éditables
+      main_title: "Gestion des dépenses",
+      subtitle: "Suivez vos plafonds et vos dépenses par catégorie.",
+      category_section_title: "Catégories et plafonds",
+      dashboard_section_title: "Vue d'ensemble",
+      save_limit_label: "Enregistrer",
+      footer_text: "Exemple de dashboard de gestion de dépenses."
+    };
+
+    function applyConfigToUI(config) {
+      const cfg = config || defaultConfig;
+
+      const appWrapper = document.querySelector(".app-wrapper");
+      const mainContent = document.querySelector(".main-content");
+      const titleEl = document.getElementById("main-title");
+      const subtitleEl = document.getElementById("subtitle");
+      const catTitleEl = document.getElementById("categories-title");
+      const dashTitleEl = document.getElementById("dashboard-title");
+      const saveLimitBtn = document.getElementById("save-limit-btn");
+      const footerText = document.getElementById("footer-text");
+
+      const baseFontStack = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      const customFont = cfg.font_family || defaultConfig.font_family;
+      const baseSize = Number(cfg.font_size || defaultConfig.font_size);
+
+      const fullFontStack = customFont + ", " + baseFontStack;
+
+      if (appWrapper) {
+        appWrapper.style.backgroundColor = cfg.background_color || defaultConfig.background_color;
+      }
+      if (mainContent) {
+        mainContent.style.backgroundColor = "rgba(15,23,42,0.9)"; // reste très proche de surface_color
+        mainContent.style.color = cfg.text_color || defaultConfig.text_color;
+        mainContent.style.fontFamily = fullFontStack;
+        mainContent.style.fontSize = baseSize + "px";
+      }
+
+      if (titleEl) {
+        titleEl.textContent = cfg.main_title || defaultConfig.main_title;
+        titleEl.style.fontFamily = fullFontStack;
+        titleEl.style.fontSize = baseSize * 1.6 + "px";
+        titleEl.style.color = cfg.text_color || defaultConfig.text_color;
+      }
+
+      if (subtitleEl) {
+        subtitleEl.textContent = cfg.subtitle || defaultConfig.subtitle;
+        subtitleEl.style.fontFamily = fullFontStack;
+        subtitleEl.style.fontSize = baseSize * 0.9 + "px";
+        subtitleEl.style.color = cfg.text_color || defaultConfig.text_color;
+      }
+
+      if (catTitleEl) {
+        catTitleEl.textContent = cfg.category_section_title || defaultConfig.category_section_title;
+        catTitleEl.style.fontFamily = fullFontStack;
+        catTitleEl.style.fontSize = baseSize * 1.1 + "px";
+        catTitleEl.style.color = cfg.text_color || defaultConfig.text_color;
+      }
+
+      if (dashTitleEl) {
+        dashTitleEl.textContent = cfg.dashboard_section_title || defaultConfig.dashboard_section_title;
+        dashTitleEl.style.fontFamily = fullFontStack;
+        dashTitleEl.style.fontSize = baseSize * 1.1 + "px";
+        dashTitleEl.style.color = cfg.text_color || defaultConfig.text_color;
+      }
+
+
+
+      if (saveLimitBtn) {
+        saveLimitBtn.textContent = cfg.save_limit_label || defaultConfig.save_limit_label;
+        saveLimitBtn.style.backgroundColor = cfg.secondary_action_color || defaultConfig.secondary_action_color;
+      }
+
+      if (footerText) {
+        footerText.textContent = cfg.footer_text || defaultConfig.footer_text;
+        footerText.style.fontFamily = fullFontStack;
+        footerText.style.fontSize = baseSize * 0.8 + "px";
+        footerText.style.color = "#64748b";
+      }
+
+      // Appliquer couleur de texte globale
+      const labels = document.querySelectorAll("label, dt, dd, p, span, button, input, select, h3");
+      labels.forEach(function (el) {
+        if (!el.classList.contains("text-slate-400") &&
+            !el.classList.contains("text-slate-300") &&
+            !el.classList.contains("text-slate-500") &&
+            !el.classList.contains("text-emerald-300") &&
+            !el.classList.contains("text-orange-300")) {
+          el.style.color = cfg.text_color || defaultConfig.text_color;
+        }
+        el.style.fontFamily = fullFontStack;
+      });
+
+      // Appliquer couleurs sur chart (sera re-appliqué après chaque redraw)
+      redrawChart();
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig: defaultConfig,
+        onConfigChange: async function (config) {
+          applyConfigToUI(config);
+        },
+        mapToCapabilities: function (config) {
+          const cfg = config || defaultConfig;
+          return {
+            recolorables: [
+              {
+                get: () => cfg.background_color || defaultConfig.background_color,
+                set: (value) => {
+                  cfg.background_color = value;
+                  window.elementSdk.setConfig({ background_color: value });
+                }
+              },
+              {
+                get: () => cfg.surface_color || defaultConfig.surface_color,
+                set: (value) => {
+                  cfg.surface_color = value;
+                  window.elementSdk.setConfig({ surface_color: value });
+                }
+              },
+              {
+                get: () => cfg.text_color || defaultConfig.text_color,
+                set: (value) => {
+                  cfg.text_color = value;
+                  window.elementSdk.setConfig({ text_color: value });
+                }
+              },
+              {
+                get: () => cfg.primary_action_color || defaultConfig.primary_action_color,
+                set: (value) => {
+                  cfg.primary_action_color = value;
+                  window.elementSdk.setConfig({ primary_action_color: value });
+                }
+              },
+              {
+                get: () => cfg.secondary_action_color || defaultConfig.secondary_action_color,
+                set: (value) => {
+                  cfg.secondary_action_color = value;
+                  window.elementSdk.setConfig({ secondary_action_color: value });
+                }
+              }
+            ],
+            borderables: [],
+            fontEditable: {
+              get: () => cfg.font_family || defaultConfig.font_family,
+              set: (value) => {
+                cfg.font_family = value;
+                window.elementSdk.setConfig({ font_family: value });
+              }
+            },
+            fontSizeable: {
+              get: () => Number(cfg.font_size || defaultConfig.font_size),
+              set: (value) => {
+                cfg.font_size = Number(value);
+                window.elementSdk.setConfig({ font_size: Number(value) });
+              }
+            }
+          };
+        },
+        mapToEditPanelValues: function (config) {
+          const cfg = config || defaultConfig;
+          return new Map([
+            ["main_title", cfg.main_title || defaultConfig.main_title],
+            ["subtitle", cfg.subtitle || defaultConfig.subtitle],
+            ["category_section_title", cfg.category_section_title || defaultConfig.category_section_title],
+            ["dashboard_section_title", cfg.dashboard_section_title || defaultConfig.dashboard_section_title],
+            ["save_limit_label", cfg.save_limit_label || defaultConfig.save_limit_label]
+          ]);
+        }
+      });
+    } else {
+      // Sans SDK, appliquer config par défaut
+      document.addEventListener("DOMContentLoaded", function () {
+        applyConfigToUI(defaultConfig);
+      });
+    }
+
+    // --------- LOGIQUE DE GESTION DES DÉPENSES ---------
+
+    const categories = [
+      { id: "logement", nom: "Logement", plafond: 1200, depense: 0 },
+      { id: "courses", nom: "Courses", plafond: 400, depense: 0 },
+      { id: "transport", nom: "Transport", plafond: 150, depense: 0 },
+      { id: "loisirs", nom: "Loisirs", plafond: 200, depense: 0 }
+    ];
+
+    let selectedCategoryId = categories[0].id;
+
+    const categorySelect = document.getElementById("category-select");
+    const limitInput = document.getElementById("limit-input");
+    const limitForm = document.getElementById("limit-form");
+    const messageBox = document.getElementById("message-box");
+
+    function showMessage(text, type) {
+      if (!messageBox) return;
+      messageBox.classList.remove("hidden");
+      messageBox.textContent = text;
+      messageBox.classList.remove("border-emerald-500", "text-emerald-300", "border-red-500", "text-red-300");
+
+      if (type === "success") {
+        messageBox.classList.add("border-emerald-500", "text-emerald-300");
+      } else if (type === "error") {
+        messageBox.classList.add("border-red-500", "text-red-300");
+      } else {
+        messageBox.classList.add("border-slate-600", "text-slate-200");
+      }
+
+      setTimeout(function () {
+        messageBox.classList.add("hidden");
+      }, 4000);
+    }
+
+    function getSelectedCategory() {
+      return categories.find(function (c) { return c.id === selectedCategoryId; }) || categories[0];
+    }
+
+    function refreshCategorySelect() {
+      if (!categorySelect) return;
+      categorySelect.innerHTML = "";
+      categories.forEach(function (cat) {
+        const opt = document.createElement("option");
+        opt.value = cat.id;
+        opt.textContent = cat.nom;
+        if (cat.id === selectedCategoryId) opt.selected = true;
+        categorySelect.appendChild(opt);
+      });
+    }
+
+    function updateLimitInput() {
+      const cat = getSelectedCategory();
+      if (limitInput) limitInput.value = (cat.plafond || 0).toString();
+    }
+
+    const categoryColors = [
+      { bg: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", light: "#60a5fa", solid: "#3b82f6" },  // Bleu
+      { bg: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)", light: "#a78bfa", solid: "#8b5cf6" },  // Violet
+      { bg: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)", light: "#f472b6", solid: "#ec4899" },  // Rose
+      { bg: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", light: "#fbbf24", solid: "#f59e0b" }   // Ambre
+    ];
+
+    function redrawChart() {
+      const container = document.getElementById("chart-container");
+      if (!container) return;
+
+      container.innerHTML = "";
+
+      const maxPlafond = categories.reduce(function (max, cat) {
+        return Math.max(max, cat.plafond || 0, cat.depense || 0);
+      }, 0) || 1;
+
+      categories.forEach(function (cat, index) {
+        const plafond = cat.plafond || 0;
+        const depense = cat.depense || 0;
+        const ratioPlafond = plafond / maxPlafond;
+        const ratioDepense = Math.min(depense / maxPlafond, 1);
+        const percent = plafond > 0 ? Math.round((depense / plafond) * 100) : 0;
+
+        const colorScheme = categoryColors[index % categoryColors.length];
+
+        const row = document.createElement("div");
+        row.className = "flex flex-col gap-1";
+
+        const topRow = document.createElement("div");
+        topRow.className = "flex items-center justify-between gap-2";
+        
+        const labelContainer = document.createElement("div");
+        labelContainer.className = "flex items-center gap-2";
+        
+        const colorDot = document.createElement("span");
+        colorDot.className = "inline-block w-3 h-3 rounded-full shadow-sm";
+        colorDot.style.background = colorScheme.bg;
+        
+        const label = document.createElement("span");
+        label.className = "text-xs font-medium text-slate-100";
+        label.textContent = cat.nom;
+        
+        labelContainer.appendChild(colorDot);
+        labelContainer.appendChild(label);
+        
+        const info = document.createElement("span");
+        info.className = "text-[11px] font-medium";
+        info.style.color = colorScheme.light;
+        info.textContent = depense.toFixed(2) + "€ / " + plafond.toFixed(0) + "€ (" + percent + "%)";
+        
+        topRow.appendChild(labelContainer);
+        topRow.appendChild(info);
+
+        const barBg = document.createElement("div");
+        barBg.className = "w-full rounded-full bg-slate-700/50 overflow-hidden h-5 shadow-inner";
+
+        const barPlafond = document.createElement("div");
+        barPlafond.className = "relative w-full h-full";
+        barPlafond.style.backgroundColor = "#1e293b";
+
+        const barUsed = document.createElement("div");
+        barUsed.className = "absolute left-0 top-0 h-full rounded-full shadow-lg transition-all duration-300";
+        barUsed.style.width = (ratioDepense * 100).toFixed(1) + "%";
+        barUsed.style.background = colorScheme.bg;
+        barUsed.style.boxShadow = "0 0 10px " + colorScheme.light + "40";
+
+        const barLimitOutline = document.createElement("div");
+        barLimitOutline.className = "absolute left-0 top-0 h-full rounded-full border-2 border-dashed";
+        barLimitOutline.style.width = (ratioPlafond * 100).toFixed(1) + "%";
+        barLimitOutline.style.borderColor = colorScheme.light + "60";
+
+        barPlafond.appendChild(barUsed);
+        barPlafond.appendChild(barLimitOutline);
+        barBg.appendChild(barPlafond);
+
+        row.appendChild(topRow);
+        row.appendChild(barBg);
+        container.appendChild(row);
+      });
+
+      // Redessiner tous les autres graphiques
+      drawVerticalChart();
+      drawUsageChart();
+      drawRatioChart();
+    }
+
+    function drawVerticalChart() {
+      const container = document.getElementById("vertical-chart");
+      if (!container) return;
+      container.innerHTML = "";
+
+      const maxDepense = Math.max(...categories.map(function(c) { return c.depense || 0; }), 1);
+
+      categories.forEach(function (cat, index) {
+        const depense = cat.depense || 0;
+        const heightPercent = (depense / maxDepense) * 100;
+        const colorScheme = categoryColors[index % categoryColors.length];
+
+        const barWrapper = document.createElement("div");
+        barWrapper.className = "flex flex-col items-center gap-2 flex-1";
+
+        const barContainer = document.createElement("div");
+        barContainer.className = "w-full flex items-end justify-center";
+        barContainer.style.height = "100%";
+
+        const bar = document.createElement("div");
+        bar.className = "w-full rounded-t-lg shadow-lg transition-all duration-500";
+        bar.style.height = heightPercent + "%";
+        bar.style.background = colorScheme.bg;
+        bar.style.minHeight = "4px";
+
+        const label = document.createElement("span");
+        label.className = "text-[10px] font-medium text-slate-300 text-center";
+        label.textContent = cat.nom;
+
+        const value = document.createElement("span");
+        value.className = "text-xs font-semibold text-center";
+        value.style.color = colorScheme.light;
+        value.textContent = depense.toFixed(0) + "€";
+
+        barContainer.appendChild(bar);
+        barWrapper.appendChild(barContainer);
+        barWrapper.appendChild(value);
+        barWrapper.appendChild(label);
+        container.appendChild(barWrapper);
+      });
+    }
+
+    function drawUsageChart() {
+      const container = document.getElementById("usage-chart");
+      if (!container) return;
+      container.innerHTML = "";
+
+      categories.forEach(function (cat, index) {
+        const plafond = cat.plafond || 0;
+        const depense = cat.depense || 0;
+        const percent = plafond > 0 ? Math.min((depense / plafond) * 100, 100) : 0;
+        const colorScheme = categoryColors[index % categoryColors.length];
+
+        const row = document.createElement("div");
+        row.className = "flex flex-col gap-1";
+
+        const topRow = document.createElement("div");
+        topRow.className = "flex items-center justify-between";
+
+        const label = document.createElement("span");
+        label.className = "text-xs font-medium text-slate-200";
+        label.textContent = cat.nom;
+
+        const percentLabel = document.createElement("span");
+        percentLabel.className = "text-xs font-bold";
+        percentLabel.style.color = colorScheme.light;
+        percentLabel.textContent = Math.round(percent) + "%";
+
+        topRow.appendChild(label);
+        topRow.appendChild(percentLabel);
+
+        const barBg = document.createElement("div");
+        barBg.className = "w-full h-6 rounded-full bg-slate-700/50 overflow-hidden";
+
+        const bar = document.createElement("div");
+        bar.className = "h-full rounded-full transition-all duration-500";
+        bar.style.width = percent + "%";
+        bar.style.background = colorScheme.bg;
+
+        barBg.appendChild(bar);
+        row.appendChild(topRow);
+        row.appendChild(barBg);
+        container.appendChild(row);
+      });
+    }
+
+    function drawRatioChart() {
+      const container = document.getElementById("ratio-chart");
+      if (!container) return;
+      container.innerHTML = "";
+
+      categories.forEach(function (cat, index) {
+        const plafond = cat.plafond || 0;
+        const depense = cat.depense || 0;
+        const remaining = Math.max(plafond - depense, 0);
+        
+        const depensePercent = plafond > 0 ? (depense / plafond) * 100 : 0;
+        const remainingPercent = plafond > 0 ? (remaining / plafond) * 100 : 100;
+        
+        const colorScheme = categoryColors[index % categoryColors.length];
+
+        const row = document.createElement("div");
+        row.className = "flex flex-col gap-2";
+
+        // En-tête avec nom et montants
+        const header = document.createElement("div");
+        header.className = "flex items-center justify-between";
+
+        const nameLabel = document.createElement("div");
+        nameLabel.className = "flex items-center gap-2";
+        
+        const colorDot = document.createElement("span");
+        colorDot.className = "inline-block w-3 h-3 rounded-full";
+        colorDot.style.background = colorScheme.bg;
+        
+        const name = document.createElement("span");
+        name.className = "text-sm font-medium text-slate-100";
+        name.textContent = cat.nom;
+        
+        nameLabel.appendChild(colorDot);
+        nameLabel.appendChild(name);
+
+        const amounts = document.createElement("div");
+        amounts.className = "flex items-center gap-3 text-xs";
+        
+        const depenseLabel = document.createElement("span");
+        depenseLabel.className = "font-semibold";
+        depenseLabel.style.color = colorScheme.light;
+        depenseLabel.textContent = depense.toFixed(0) + "€ dépensé";
+        
+        const remainingLabel = document.createElement("span");
+        remainingLabel.className = "text-slate-400";
+        remainingLabel.textContent = remaining.toFixed(0) + "€ restant";
+        
+        amounts.appendChild(depenseLabel);
+        amounts.appendChild(remainingLabel);
+
+        header.appendChild(nameLabel);
+        header.appendChild(amounts);
+
+        // Barre de ratio
+        const barContainer = document.createElement("div");
+        barContainer.className = "w-full h-8 rounded-full bg-slate-700/50 overflow-hidden flex";
+
+        // Partie dépensée
+        const barDepense = document.createElement("div");
+        barDepense.className = "h-full transition-all duration-500 flex items-center justify-center";
+        barDepense.style.width = Math.max(depensePercent, 0) + "%";
+        barDepense.style.background = colorScheme.bg;
+        barDepense.style.boxShadow = "0 0 15px " + colorScheme.light + "40";
+        
+        if (depensePercent > 10) {
+          const depenseText = document.createElement("span");
+          depenseText.className = "text-xs font-bold text-white";
+          depenseText.textContent = Math.round(depensePercent) + "%";
+          barDepense.appendChild(depenseText);
+        }
+
+        // Partie restante
+        const barRemaining = document.createElement("div");
+        barRemaining.className = "h-full bg-slate-700 transition-all duration-500 flex items-center justify-center";
+        barRemaining.style.width = Math.max(remainingPercent, 0) + "%";
+        
+        if (remainingPercent > 10) {
+          const remainingText = document.createElement("span");
+          remainingText.className = "text-xs font-medium text-slate-300";
+          remainingText.textContent = Math.round(remainingPercent) + "%";
+          barRemaining.appendChild(remainingText);
+        }
+
+        barContainer.appendChild(barDepense);
+        barContainer.appendChild(barRemaining);
+
+        row.appendChild(header);
+        row.appendChild(barContainer);
+        container.appendChild(row);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      refreshCategorySelect();
+      updateLimitInput();
+      redrawChart();
+
+      if (categorySelect) {
+        categorySelect.addEventListener("change", function (e) {
+          selectedCategoryId = e.target.value;
+          updateLimitInput();
+        });
+      }
+
+      if (limitForm) {
+        limitForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          const cat = getSelectedCategory();
+          const value = Number(limitInput.value);
+          if (isNaN(value) || value < 0) {
+            showMessage("Veuillez saisir un plafond valide (>= 0).", "error");
+            return;
+          }
+          cat.plafond = value;
+          updateLimitInput();
+          redrawChart();
+          showMessage("Plafond mis à jour pour " + cat.nom + ".", "success");
+        });
+      }
+
+      // Appliquer config par défaut si SDK pas encore dispo
+      if (!window.elementSdk) {
+        applyConfigToUI(defaultConfig);
+      }
+    });
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a853ea283c214ab',t:'MTc2NDc4Nzc3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
