@@ -31,17 +31,17 @@ def get_last_3_months_stats(db: Session):
     data_revenus = []
     data_depenses = []
 
-    # On boucle sur les 3 derniers mois (2 mois avant + le mois actuel)
+    # On boucle sur les 3 derniers mois (2 mois avant puis le mois précédent puis le mois actuel => ordre du graphique)
     for i in range(2, -1, -1):
-        date_target = today - timedelta(days=i*30) 
+        date_target = today - timedelta(days=i*30) # ajd - 30j = mois précédent
         month = date_target.month
         year = date_target.year
         
-        # Nom du mois pour l'étiquette (ex: "12/2023")
+        # Nom du mois pour l'étiquette (ex: "12/2025")
         labels.append(f"{month:02d}/{year}")
 
         # Requête aggrégée pour aller vite
-        # Somme des transactions du mois filtrées par type
+        # Somme des transactions du mois filtrées par type => Select SUM(...) WHERE month=.. AND type=revenu/depense
         revenu = db.query(func.sum(models.Transaction.amount))\
             .join(models.Category)\
             .filter(extract('year', models.Transaction.date) == year)\
@@ -72,7 +72,7 @@ def get_category_pie_stats(db: Session):
     """
     today = datetime.now()
     
-    # Récupère toutes les dépenses du mois
+    # Récupère toutes les dépenses du mois actuel avec leurs catégories
     transactions = db.query(models.Transaction)\
         .join(models.Category)\
         .filter(extract('year', models.Transaction.date) == today.year)\
@@ -80,7 +80,7 @@ def get_category_pie_stats(db: Session):
         .filter(models.Category.type == 'depense')\
         .all()
 
-    # Structure : { "ParentName": { "total": 0, "details": {"SubName": 0} } }
+    # Structure : { "ParentName": { "total": 0, "details": {"SubName": 0} } } exemple : { "Alimentation": { "total": 100, "details": {"Courses": 70, "Restaurant": 30} } }
     stats = defaultdict(lambda: {"total": 0, "details": defaultdict(int)})
 
     for t in transactions:
@@ -105,7 +105,7 @@ def get_category_pie_stats(db: Session):
         labels.append(parent)
         data.append(info["total"])
         
-        # Création du texte de détail : "Alcool: 20€, Jus: 10€"
+        # Création du texte de détail : "Courses: 70€, Restaurant: 30€"
         detail_txt = ", ".join([f"{k}: {v}€" for k, v in info["details"].items()])
         tooltips.append(detail_txt)
 

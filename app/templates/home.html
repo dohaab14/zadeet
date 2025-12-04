@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <title>ZADEET - Tableau de Bord</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    >
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="bg-light">
+
+    <div class="container py-4">
+      
+      <!-- Alerte si Backend non détecté (sera affichée par le JS si besoin) -->
+      <div id="demoAlert" class="alert alert-warning alert-dismissible fade show d-none" role="alert">
+        <strong>Mode Démo :</strong> Le serveur Python n'est pas détecté.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+
+      <!-- Header -->
+      <header class="text-center mb-4">
+        <h1 class="fw-bold">Tableau de Bord</h1>
+        <p class="text-muted">Vue d'ensemble de vos finances</p>
+      </header>
+
+      <!-- Bloc Solde (KPI Principal) -->
+      <section class="card shadow-sm mb-4 border-0">
+        <div class="card-body text-center py-4">
+          <div class="text-uppercase text-secondary fw-semibold small">Solde Actuel</div>
+          <div class="display-4 fw-bold" id="totalBalanceDisplay">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span class="fs-4 text-muted">Chargement...</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Zone de Filtres et Navigation vers Transactions -->
+      <section class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title fw-bold mb-3">Accéder aux transactions</h5>
+            <!-- Formulaire GET : enverra les données dans l'URL (ex: /transactions?month=11&cat=2) -->
+            <form action="/transactions" method="get" class="row g-2 align-items-end">
+                
+                <!-- Filtre Mois -->
+                <div class="col-md-5">
+                    <label class="form-label small text-muted">Période</label>
+                    <select class="form-select" name="month">
+                        <option value="" selected>Mois en cours</option>
+                        <option value="last_month">Mois dernier</option>
+                        <option value="last_3_months">3 derniers mois</option>
+                        <option value="all">Tout l'historique</option>
+                    </select>
+                </div>
+
+                <!-- Filtre Catégorie (Statique pour l'instant, sera dynamique plus tard) -->
+                <div class="col-md-5">
+                    <label class="form-label small text-muted">Catégorie</label>
+                    <select class="form-select" name="category_id">
+                        <option value="" selected>Toutes les catégories</option>
+                        <!-- Rendre dynamique-->
+                    </select>
+                </div>
+
+                <!-- Bouton d'action -->
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        Voir & Filtrer
+                    </button>
+                </div>
+            </form>
+        </div>
+      </section>
+
+      <!-- Graphiques -->
+      <div class="row mb-4">
+        <!-- Graphique 1 : Bâtons -->
+        <div class="col-lg-6 mb-3 mb-lg-0">
+          <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">Revenus vs Dépenses (3 mois)</div>
+            <div class="card-body">
+              <canvas id="barChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Graphique 2 : Camembert -->
+        <div class="col-lg-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">Répartition ce mois (Parents)</div>
+            <div class="card-body">
+              <canvas id="pieChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dernières Transactions (Aperçu) -->
+      <section class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">Dernières Transactions</h5>
+            <small class="text-muted">Aperçu rapide</small>
+        </div>
+        <div class="card-body p-0">
+          {% if recent_transactions %}
+            <div class="list-group list-group-flush">
+              {% for t in recent_transactions %}
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <div class="fw-bold">{{ t.label or 'Transaction' }}</div>
+                      <div class="small text-muted">
+                        {{ t.date.strftime('%d/%m/%Y') }}
+                        {% if t.category %}
+                           • {{ t.category.name }}
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="fw-bold {% if t.category.type == 'revenu' %}text-success{% else %}text-danger{% endif %}">
+                      {% if t.category.type == 'revenu' %}+{% else %}-{% endif %}
+                      {{ '%.2f' | format(t.amount) }} €
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="p-4 text-center text-muted">
+              Aucune transaction récente (ou mode démo actif).
+            </div>
+          {% endif %}
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Scripts Bootstrap & Logique Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+
+        // 1. Charger le Solde Total
+        async function loadBalance() {
+            const display = document.getElementById('totalBalanceDisplay');
+            try {
+                // On essaie d'appeler l'API
+                const response = await fetch('/api/total-balance');
+                if (!response.ok) throw new Error("Erreur réseau");
+                
+                const data = await response.json();
+                const solde = data.total_balance;
+                
+                display.innerText = solde.toFixed(2) + " €";
+                
+                if (solde >= 0) {
+                    display.classList.add('text-success');
+                    display.classList.remove('text-danger');
+                } else {
+                    display.classList.add('text-danger');
+                    display.classList.remove('text-success');
+                }
+            } catch (err) {
+                console.warn("API non accessible, affichage données démo.", err);
+                showDemoMode();
+                // DONNÉES DE DÉMO
+                display.innerHTML = "1 250.00 € <small class='fs-6 text-muted'>(Démo)</small>";
+                display.classList.add('text-success');
+            }
+        }
+
+        // 2. Charger les Graphiques
+        async function loadCharts() {
+            let barData, pieData;
+
+
+            const response = await fetch('/api/dashboard-charts');
+            if (!response.ok) throw new Error("Erreur réseau");
+            const data = await response.json();
+            barData = data.bar_chart;
+            pieData = data.pie_chart;
+
+
+            // Graphique Bâtons
+            new Chart(document.getElementById('barChart'), {
+                type: 'bar',
+                data: {
+                    labels: barData.labels,
+                    datasets: [
+                        { label: 'Revenus', data: barData.revenus, backgroundColor: '#0d6efd' },
+                        { label: 'Dépenses', data: barData.depenses, backgroundColor: '#dc3545' }
+                    ]
+                },
+                options: { responsive: true }
+            });
+
+            // Graphique Camembert avec Tooltip Personnalisé
+            new Chart(document.getElementById('pieChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: pieData.labels,
+                    datasets: [{
+                        data: pieData.data,
+                        backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let index = context.dataIndex;
+                                    let value = context.formattedValue;
+                                    // Sécurité si tooltips n'existe pas
+                                    let details = (pieData.tooltips && pieData.tooltips[index]) ? pieData.tooltips[index] : '';
+                                    return context.label + ': ' + value + '€ (' + details + ')';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Lancement au chargement de la page
+        loadBalance();
+        loadCharts();
+    </script>
+  </body>
+</html>

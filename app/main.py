@@ -1,10 +1,14 @@
 # main.py
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from app.db.database import SessionLocal
 from app.db import models
 from app.services import services_accueil , services_transaction
-from fastapi.responses import JSONResponse
+
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory="app/templates")
 
 app = FastAPI()
 
@@ -16,9 +20,22 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/")
-def read_root():
-    return {"message": "Bienvenue sur l'API Budget Team 6 !"}
+
+@app.get("/", response_class=HTMLResponse)
+def read_root(request: Request, db: Session = Depends(get_db)):
+    """
+    Affiche la page Dashboard HTML au lieu d'un JSON.
+    """
+    # 1. On récupère les 3 dernières transactions pour l'aperçu en bas de page
+    recent = services_transaction.get_recent_transactions(db, limit=3)
+
+    # 2. On retourne le template HTML avec les données (Contexte)
+    return templates.TemplateResponse("home.html", {
+        "request": request,                  # Obligatoire pour Jinja2
+        "recent_transactions": recent        # Nos données pour la boucle HTML
+    })
+
+
 
 @app.get("/transactions")
 def get_transactions(db: Session = Depends(get_db)):
