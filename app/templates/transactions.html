@@ -95,7 +95,7 @@
                         <div class="text-end ms-3">
                           <div class="fw-bold text-primary">{{ '%.2f' | format(t.amount) }} €</div>
                           <form method="post" action="/transactions/{{ t.id }}" class="mt-2">
-                            <input type="hidden" name="_method" value="delete">
+                            <input type="hidden" name="method" value="delete">
                             <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
                           </form>
                         </div>
@@ -114,7 +114,75 @@
         </div>
       </div>
     </div>
-
+    <!-- Vue par catégorie -->
+    <section class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h2 class="h5 mb-3">Dépenses par catégorie</h2>
+  
+          {# On récupère les transactions qui ont une catégorie #}
+          {% set txns_with_category = transactions | selectattr('category', 'ne', None) | list %}
+  
+          {% if txns_with_category %}
+            {% for group in txns_with_category | groupby('category.name') %}
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <h3 class="h6 mb-0">{{ group.grouper }}</h3>
+                  <span class="badge bg-primary">
+                    {{
+                      '%.2f' | format(
+                        group.list | map(attribute='amount') | sum
+                      )
+                    }} €
+                  </span>
+                </div>
+  
+                <ul class="list-group">
+                  {% for t in group.list %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <div>
+                        <div class="fw-semibold">{{ t.label or 'Dépense' }}</div>
+                        <div class="small text-muted">
+                          Date : {{ t.date.strftime('%Y-%m-%d') }}
+                        </div>
+                      </div>
+                      <div class="fw-bold text-primary">
+                        {{ '%.2f' | format(t.amount) }} €
+                      </div>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-muted">
+              Aucune dépense avec catégorie pour le moment.
+            </div>
+          {% endif %}
+  
+          {# Cas spécial : transactions sans catégorie #}
+          {% set txns_no_category = transactions | selectattr('category', 'equalto', None) | list %}
+          {% if txns_no_category %}
+            <hr class="my-3">
+            <h3 class="h6">Sans catégorie</h3>
+            <ul class="list-group">
+              {% for t in txns_no_category %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="fw-semibold">{{ t.label or 'Dépense' }}</div>
+                    <div class="small text-muted">
+                      Date : {{ t.date.strftime('%Y-%m-%d') }}
+                    </div>
+                  </div>
+                  <div class="fw-bold text-primary">
+                    {{ '%.2f' | format(t.amount) }} €
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      </section>
+  
     <!-- Modal Nouvelle Dépense -->
     <div class="modal fade" id="expenseModal" tabindex="-1" aria-labelledby="expenseModalLabel" aria-hidden="true">
       <div class="modal-dialog">

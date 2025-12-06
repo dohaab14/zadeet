@@ -2,7 +2,7 @@
 Utilisation ici des données via schemas.py pour gérer les routes liées aux transactions
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException,Form
 from sqlalchemy.orm import Session
 
 from app.db.database import SessionLocal
@@ -44,12 +44,34 @@ def list_transactions(category_id: int | None = None, db: Session = Depends(get_
 
 # ---------------------------------------------------------------------
 
-@router.post("/", response_model=Transaction)
-def create_transaction(data: TransactionCreate, db: Session = Depends(get_db)):
+# routes_transactions.py
+
+@router.post("/")
+def create_transaction_from_form(
+    label: str = Form(...),
+    amount: float = Form(...),
+    category_id: int | None = Form(None),
+    date: str = Form(...),
+    db: Session = Depends(get_db),
+):
     """
-    Crée une nouvelle transaction
+    Crée une nouvelle transaction depuis le formulaire HTML.
+    Pour l'instant, on ignore la date envoyée et on utilise la date par défaut côté modèle.
     """
-    return transaction_service.create_transaction(db, data)
+    data = TransactionCreate(
+        label=label,
+        amount=amount,
+        category_id=category_id,
+    )
+
+    transaction_service.create_transaction(db, data)
+
+    # Après création, on revient sur la page des transactions
+    return RedirectResponse(
+        url="/transactions/transactions-page",
+        status_code=303,
+    )
+
 
 
 # ---------------------------------------------------------------------
@@ -80,6 +102,30 @@ def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
 
     transaction_service.delete_transaction(db, txn)
     return RedirectResponse(url="/transactions/transactions-page", status_code=303)
+
+@router.post("/{transaction_id}")
+def handle_transaction_form(
+    transaction_id: int,
+    method: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """
+    Gère les formulaires HTML envoyés sur /transactions/{id}.
+    Pour l'instant, on ne gère que la suppression via method=delete.
+    """
+    if method.lower() == "delete":
+        txn = transaction_service.get_transaction(db, transaction_id)
+        if not txn:
+            raise HTTPException(status_code=404, detail="Transaction non trouvée")
+
+        transaction_service.delete_transaction(db, txn)
+        return RedirectResponse(
+            url="/transactions/transactions-page",
+            status_code=303,
+        )
+
+    # Si on tombe ici, _method n'est pas géré
+    raise HTTPException(status_code=405, detail="Méthode de formulaire non supportée")
 
 
 # -------------------------------------------------------------------

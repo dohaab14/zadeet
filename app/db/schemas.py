@@ -52,7 +52,8 @@ class Category(CategoryBase):
 class TransactionBase(BaseModel):
     label: str
     amount: float
-    category_id: int
+    category_id: int | None = None
+
 
 
 class TransactionCreate(TransactionBase):
