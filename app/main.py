@@ -4,9 +4,9 @@ from fastapi.templating import Jinja2Templates
 from typing import List
 from fastapi import Depends
 
-from app.routes import routes_transactions  # ton router transactions
+from app.api import routes_transactions  # ton router transactions
 from app.services import services_accueil, services_transactions
-from app.schemas import Transaction
+from app.db import Transaction
 
 templates = Jinja2Templates(directory="app/templates")
 

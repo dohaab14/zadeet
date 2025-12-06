@@ -5,7 +5,7 @@
     <title>Gestionnaire de Dépenses - Transactions</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Bootstrap uniquement (pas de CSS custom) -->
+    <!-- Bootstrap uniquement -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -24,28 +24,16 @@
         <div class="card-body">
           <div class="row text-center">
             <div class="col-md-4 mb-3 mb-md-0">
-              <div class="fw-semibold text-secondary text-uppercase small">
-                Total Dépenses
-              </div>
-              <div class="fs-3 fw-bold text-primary">
-                {{ '%.2f' | format(total_expenses or 0) }} €
-              </div>
+              <div class="fw-semibold text-secondary text-uppercase small">Total Dépenses</div>
+              <div class="fs-3 fw-bold text-primary">{{ '%.2f' | format(total_expenses or 0) }} €</div>
             </div>
             <div class="col-md-4 mb-3 mb-md-0">
-              <div class="fw-semibold text-secondary text-uppercase small">
-                Catégories
-              </div>
-              <div class="fs-3 fw-bold">
-                {{ total_categories }}
-              </div>
+              <div class="fw-semibold text-secondary text-uppercase small">Catégories</div>
+              <div class="fs-3 fw-bold">{{ total_categories }}</div>
             </div>
             <div class="col-md-4">
-              <div class="fw-semibold text-secondary text-uppercase small">
-                Transactions
-              </div>
-              <div class="fs-3 fw-bold">
-                {{ total_transactions }}
-              </div>
+              <div class="fw-semibold text-secondary text-uppercase small">Transactions</div>
+              <div class="fs-3 fw-bold">{{ total_transactions }}</div>
             </div>
           </div>
         </div>
@@ -53,19 +41,10 @@
 
       <!-- Boutons d'action -->
       <section class="d-flex flex-column flex-md-row gap-2 mb-4">
-        <!-- Ouvre le modal d'ajout de dépense -->
-        <button
-          class="btn btn-primary flex-fill"
-          data-bs-toggle="modal"
-          data-bs-target="#expenseModal"
-        >
+        <button class="btn btn-primary flex-fill" data-bs-toggle="modal" data-bs-target="#expenseModal">
           Ajouter une dépense
         </button>
-
-        <!-- Lien vers la page catégories -->
-        <a href="/categories/" class="btn btn-secondary flex-fill text-center">
-          Gérer les catégories
-        </a>
+        <a href="/categories/" class="btn btn-secondary flex-fill text-center">Gérer les catégories</a>
       </section>
 
       <div class="row">
@@ -74,7 +53,6 @@
           <section class="card shadow-sm h-100">
             <div class="card-body">
               <h2 class="h5 mb-3">Catégories</h2>
-
               {% if categories %}
                 <ul class="list-group list-group-flush">
                   {% for cat in categories %}
@@ -93,42 +71,32 @@
           </section>
         </div>
 
-        <!-- Colonne dépenses -->
+        <!-- Colonne transactions -->
         <div class="col-lg-8 mb-4">
           <section class="card shadow-sm h-100">
             <div class="card-body">
               <h2 class="h5 mb-3">Dépenses</h2>
-
               {% if transactions %}
                 <div class="list-group">
                   {% for t in transactions %}
                     <div class="list-group-item mb-2">
                       <div class="d-flex justify-content-between align-items-center">
                         <div>
-                          <div class="fw-bold">
-                            {{ t.description or 'Dépense' }}
-                          </div>
+                          <div class="fw-bold">{{ t.label or 'Dépense' }}</div>
                           <div class="small text-muted">
                             {% if t.category %}
                               Catégorie : {{ t.category.name }} -
                             {% else %}
                               Sans catégorie -
                             {% endif %}
-                            Date : {{ t.date }}
+                            Date : {{ t.date.strftime('%Y-%m-%d') }}
                           </div>
                         </div>
                         <div class="text-end ms-3">
-                          <div class="fw-bold text-primary">
-                            {{ '%.2f' | format(t.amount) }} €
-                          </div>
-                          <form
-                            method="post"
-                            action="/transactions/{{ t.id }}/delete"
-                            class="mt-2"
-                          >
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                              Supprimer
-                            </button>
+                          <div class="fw-bold text-primary">{{ '%.2f' | format(t.amount) }} €</div>
+                          <form method="post" action="/transactions/{{ t.id }}" class="mt-2">
+                            <input type="hidden" name="_method" value="delete">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
                           </form>
                         </div>
                       </div>
@@ -148,65 +116,30 @@
     </div>
 
     <!-- Modal Nouvelle Dépense -->
-    <div
-      class="modal fade"
-      id="expenseModal"
-      tabindex="-1"
-      aria-labelledby="expenseModalLabel"
-      aria-hidden="true"
-    >
+    <div class="modal fade" id="expenseModal" tabindex="-1" aria-labelledby="expenseModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="expenseModalLabel">Nouvelle dépense</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Fermer"
-            ></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
           </div>
           <form method="post" action="/transactions/">
             <div class="modal-body">
-              <!-- is_expense = true en dur pour cette page -->
               <input type="hidden" name="is_expense" value="true">
 
               <div class="mb-3">
-                <label for="expenseDescription" class="form-label">
-                  Nom de la dépense
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="expenseDescription"
-                  name="description"
-                  required
-                >
+                <label for="expenseLabel" class="form-label">Nom de la dépense</label>
+                <input type="text" class="form-control" id="expenseLabel" name="label" required>
               </div>
 
               <div class="mb-3">
-                <label for="expenseAmount" class="form-label">
-                  Montant (€)
-                </label>
-                <input
-                  type="number"
-                  class="form-control"
-                  id="expenseAmount"
-                  name="amount"
-                  step="0.01"
-                  required
-                >
+                <label for="expenseAmount" class="form-label">Montant (€)</label>
+                <input type="number" class="form-control" id="expenseAmount" name="amount" step="0.01" required>
               </div>
 
               <div class="mb-3">
-                <label for="expenseCategory" class="form-label">
-                  Catégorie
-                </label>
-                <select
-                  class="form-select"
-                  id="expenseCategory"
-                  name="category_id"
-                >
+                <label for="expenseCategory" class="form-label">Catégorie</label>
+                <select class="form-select" id="expenseCategory" name="category_id">
                   <option value="">Sans catégorie</option>
                   {% for cat in categories %}
                     <option value="{{ cat.id }}">{{ cat.name }}</option>
@@ -215,29 +148,13 @@
               </div>
 
               <div class="mb-3">
-                <label for="expenseDate" class="form-label">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  class="form-control"
-                  id="expenseDate"
-                  name="date_str"
-                  required
-                >
+                <label for="expenseDate" class="form-label">Date</label>
+                <input type="date" class="form-control" id="expenseDate" name="date" required>
               </div>
             </div>
             <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-secondary"
-                data-bs-dismiss="modal"
-              >
-                Annuler
-              </button>
-              <button type="submit" class="btn btn-primary">
-                Enregistrer
-              </button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+              <button type="submit" class="btn btn-primary">Enregistrer</button>
             </div>
           </form>
         </div>
@@ -245,11 +162,8 @@
     </div>
 
     <!-- Bootstrap JS -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      // Pré-remplir la date du jour dans le formulaire du modal
       const dateInput = document.getElementById('expenseDate');
       if (dateInput && !dateInput.value) {
         const today = new Date().toISOString().slice(0, 10);

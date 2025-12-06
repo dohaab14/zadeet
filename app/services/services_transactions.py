@@ -2,11 +2,11 @@
 Logique du code pour les transactions
 Ici utilisation de models.py pour interagir avec la bdd
 """
-import models
+
 from sqlalchemy.orm import Session
 from datetime import datetime
-from models import Transaction
-from schemas import TransactionCreate, TransactionUpdate
+from app.db.models import Transaction
+from app.db.schemas import TransactionCreate, TransactionUpdate
 
 
 def create_transaction(db: Session, data: TransactionCreate):
@@ -79,3 +79,30 @@ def get_recent_transactions(db: Session, limit: int = 3):
     Récupère les dernières transactions pour l'aperçu.
     """
     return db.query(models.Transaction).order_by(models.Transaction.date.desc()).limit(limit).all()
+
+from . import services_categories
+
+def get_transactions_overview(db: Session):
+    """
+    Retourne toutes les données nécessaires pour la page transactions :
+    - transactions
+    - catégories
+    - total_transactions
+    - total_categories
+    - total_expenses
+    """
+    transactions = get_transactions(db)
+    categories = services_categories.get_categories(db)
+    total_transactions = len(transactions)
+    total_categories = len(categories)
+    total_expenses = sum(
+        t.amount for t in transactions if t.category and t.category.type == "depense"
+    )
+
+    return {
+        "transactions": transactions,
+        "categories": categories,
+        "total_transactions": total_transactions,
+        "total_categories": total_categories,
+        "total_expenses": total_expenses
+    }

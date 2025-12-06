@@ -5,14 +5,21 @@ Utilisation ici des données via schemas.py pour gérer les routes liées aux tr
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from database import SessionLocal
-from schemas import Transaction, TransactionCreate, TransactionUpdate
-import services_transactions as service
+from app.db.database import SessionLocal
+from app.db.schemas import Transaction, TransactionCreate, TransactionUpdate
 from sqlalchemy import extract
 from app.db import models
 from typing import List
+from app.services import services_transactions as transaction_service
+from app.services import services_categories as category_service
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse
+
+from fastapi.responses import HTMLResponse
+from fastapi import Request
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
+templates = Jinja2Templates(directory="app/templates")
 
 
 def get_db():
@@ -32,7 +39,7 @@ def list_transactions(category_id: int | None = None, db: Session = Depends(get_
     """
     Récupère toutes les transactions ou celles d'une catégorie spécifique
     """
-    return service.get_transactions(db, category_id)
+    return transaction_service.get_transactions(db, category_id)
 
 
 # ---------------------------------------------------------------------
@@ -42,7 +49,7 @@ def create_transaction(data: TransactionCreate, db: Session = Depends(get_db)):
     """
     Crée une nouvelle transaction
     """
-    return service.create_transaction(db, data)
+    return transaction_service.create_transaction(db, data)
 
 
 # ---------------------------------------------------------------------
@@ -52,12 +59,12 @@ def update_transaction(transaction_id: int, data: TransactionUpdate, db: Session
     """
     Met à jour une transaction existante
     """
-    txn = service.get_transaction(db, transaction_id)
+    txn = transaction_service.get_transaction(db, transaction_id)
 
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction non trouvée")
 
-    return service.update_transaction(db, txn, data)
+    return transaction_service.update_transaction(db, txn, data)
 
 
 # ---------------------------------------------------------------------
@@ -66,13 +73,13 @@ def update_transaction(transaction_id: int, data: TransactionUpdate, db: Session
 def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
     """
     Supprime une transaction existante"""
-    txn = service.get_transaction(db, transaction_id)
+    txn = transaction_service.get_transaction(db, transaction_id)
 
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction non trouvée")
 
-    service.delete_transaction(db, txn)
-    return {"message": "Transaction supprimée"}
+    transaction_service.delete_transaction(db, txn)
+    return RedirectResponse(url="/transactions/transactions-page", status_code=303)
 
 
 # -------------------------------------------------------------------
@@ -101,3 +108,13 @@ def get_recent_transactions_api(limit: int = 3, db: Session = Depends(get_db)):
     ).limit(limit).all()
 
     return transactions
+
+
+# -------------------------------------------------------------------
+@router.get("/transactions-page", response_class=HTMLResponse)
+def transactions_page(request: Request, db: Session = Depends(get_db)):
+    overview = transaction_service.get_transactions_overview(db)
+    return templates.TemplateResponse("transactions.html", {
+        "request": request,
+        **overview
+    })
