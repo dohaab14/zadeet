@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from app.db.models import Transaction
 from app.db.schemas import TransactionCreate, TransactionUpdate
+from . import services_categories
 
 
 def create_transaction(db: Session, data: TransactionCreate):
