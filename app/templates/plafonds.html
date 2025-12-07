@@ -3,99 +3,106 @@
  <head>
   <meta charset="UTF-8">
   <title>Gestion de Dépenses</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com"></script><!-- Canva SDKs -->
-  <script src="/_sdk/element_sdk.js"></script>
-  <style>
-    body {
-      box-sizing: border-box;
-    }
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-    /* Focus visible pour l’accessibilité */
-    :focus-visible {
-      outline: 3px solid #f97316;
-      outline-offset: 2px;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1"><script src="https://cdn.tailwindcss.com"></script><script src="/_sdk/element_sdk.js"></script>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="w-full h-full">
   <header class="w-full">
    <div class="app-wrapper min-h-full w-full flex items-stretch justify-center bg-slate-900 py-6 px-4">
-    <div id="app-root" class="main-content w-full max-w-5xl rounded-2xl bg-slate-800/80 shadow-xl border border-slate-700 flex flex-col gap-6 p-6"><!-- En-tête -->
-     <section class="w-full" aria-labelledby="main-title">
+    <div id="app-root" class="main-content w-full max-w-5xl rounded-2xl bg-slate-800/80 shadow-xl border border-slate-700 flex flex-col gap-6 p-6"><section class="w-full" aria-labelledby="main-title">
       <div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3">
        <div>
         <h1 id="main-title" class="text-2xl font-semibold text-white tracking-tight">Gestion des dépenses</h1>
         <p id="subtitle" class="mt-1 text-sm text-slate-300">Suivez vos plafonds et vos dépenses par catégorie.</p>
        </div>
-       <div class="inline-flex items-center gap-2 bg-slate-700/70 rounded-full px-3 py-1"><span class="inline-flex h-2 w-2 rounded-full bg-emerald-400"></span> <span class="text-xs text-slate-100 font-medium">Mois en cours</span>
+       
+       <div class="inline-flex items-center gap-3">
+         <div class="relative">
+            <select id="month-select" class="rounded-full border border-slate-700 bg-slate-800/80 text-slate-100 text-xs font-medium pl-3 pr-8 py-1 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 appearance-none cursor-pointer">
+              </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+         </div>
+         <div id="current-month-indicator" class="inline-flex items-center gap-2 bg-slate-700/70 rounded-full px-3 py-1"><span class="inline-flex h-2 w-2 rounded-full bg-emerald-400"></span> <span class="text-xs text-slate-100 font-medium">Mois en cours</span>
+         </div>
        </div>
-      </div>
+       </div>
      </section>
-     <main class="w-full flex flex-col lg:flex-row gap-6" aria-label="Gestion des dépenses"><!-- Colonne gauche : formulaire catégories / plafonds / dépenses -->
-      <section class="w-full lg:w-1/2 flex flex-col gap-4" aria-labelledby="categories-title">
-       <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-4">
-        <h2 id="categories-title" class="text-lg font-semibold text-white mb-3">Catégories et plafonds</h2><!-- Sélecteur de catégorie -->
-        <div class="mb-3"><label for="category-select" class="block text-sm font-medium text-slate-200 mb-1"> Catégorie de dépense </label> <select id="category-select" name="category-select" class="w-full rounded-lg border border-slate-600 bg-slate-800/80 text-slate-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400"> <!-- Options remplies en JS --> </select>
-         <p class="mt-1 text-xs text-slate-400">Choisissez une catégorie, puis ajustez son plafond ou ajoutez des dépenses.</p>
-        </div><!-- Plafond pour la catégorie sélectionnée -->
-        <form id="limit-form" class="space-y-3" aria-label="Formulaire de plafond">
-         <div><label for="limit-input" class="block text-sm font-medium text-slate-200 mb-1"> Plafond mensuel (€) </label>
-          <div class="flex items-center gap-2"><input id="limit-input" name="limit-input" type="number" min="0" step="1" class="flex-1 rounded-lg border border-slate-600 bg-slate-800/80 text-slate-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400" aria-describedby="limit-help"> <button type="submit" id="save-limit-btn" class="inline-flex items-center justify-center rounded-lg bg-orange-500 text-white text-sm font-medium px-3 py-2 shadow-sm hover:bg-orange-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"> Enregistrer </button>
-          </div>
-          <p id="limit-help" class="mt-1 text-xs text-slate-400">Modifiez le plafond pour la catégorie sélectionnée.</p>
+
+     <main class="w-full flex flex-col items-center gap-6" aria-label="Gestion des dépenses">
+      <div class="w-full max-w-xl flex flex-col gap-6">
+        <section class="w-full flex flex-col gap-4" aria-labelledby="categories-title">
+         <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-4">
+          <h2 id="categories-title" class="text-lg font-semibold text-white mb-3">Catégories et plafonds</h2><div class="mb-3"><label for="category-select" class="block text-sm font-medium text-slate-200 mb-1"> Catégorie de dépense </label> <select id="category-select" name="category-select" class="w-full rounded-lg border border-slate-600 bg-slate-800/80 text-slate-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400"> </select>
+           <p class="mt-1 text-xs text-slate-400">Choisissez une catégorie, puis ajustez son plafond ou ajoutez des dépenses.</p>
+          </div><form id="limit-form" class="space-y-3" aria-label="Formulaire de plafond">
+           <div><label for="limit-input" class="block text-sm font-medium text-slate-200 mb-1"> Plafond mensuel (€) </label>
+            <div class="flex items-center gap-2"><input id="limit-input" name="limit-input" type="number" min="0" step="1" class="flex-1 rounded-lg border border-slate-600 bg-slate-800/80 text-slate-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400" aria-describedby="limit-help"> <button type="submit" id="save-limit-btn" class="inline-flex items-center justify-center rounded-lg bg-orange-500 text-white text-sm font-medium px-3 py-2 shadow-sm hover:bg-orange-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"> Enregistrer </button>
+            </div>
+            <p id="limit-help" class="mt-1 text-xs text-slate-400">Modifiez le plafond pour la catégorie sélectionnée.</p>
+           </div>
+          </form>
          </div>
-        </form>
-       </div>
-      </section><!-- Colonne droite : Dashboard -->
-      <section class="w-full lg:w-1/2 flex flex-col gap-3" aria-labelledby="dashboard-title">
-       <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-4 flex-1 flex flex-col">
-        <div class="flex items-center justify-between gap-2 mb-2">
-         <h2 id="dashboard-title" class="text-lg font-semibold text-white">Vue d'ensemble</h2>
-         <div class="flex items-center gap-2 text-xs text-slate-300"><span class="inline-flex items-center gap-1"> <span class="inline-block w-3 h-3 rounded-sm bg-emerald-400"></span> Utilisé </span> <span class="inline-flex items-center gap-1"> <span class="inline-block w-3 h-3 rounded-sm bg-slate-600"></span> Plafond </span>
-         </div>
-        </div><!-- Zone du chart -->
-        <div class="relative flex-1 flex flex-col gap-3 overflow-hidden mt-1">
-         <div id="chart-container" class="flex-1 flex flex-col gap-3 justify-center" role="img" aria-label="Barres représentant le montant dépensé et le plafond par catégorie"><!-- Lignes du chart créées en JS -->
-         </div>
-        </div>
-       </div><!-- Messages & erreurs -->
-       <div id="message-box" class="rounded-xl bg-slate-900/60 border border-slate-700 p-3 text-xs text-slate-200 hidden" aria-live="polite"></div>
-      </section>
-     </main><!-- Section Dashboards supplémentaires -->
+        </section>
+
+        <section class="w-full flex flex-col gap-3" aria-labelledby="messages-title">
+         <div id="message-box" class="rounded-xl bg-slate-900/60 border border-slate-700 p-3 text-xs text-slate-200 hidden" aria-live="polite"></div>
+        </section>
+      </div>
+     </main>
+
      <section class="w-full" aria-labelledby="analytics-title">
       <h2 id="analytics-title" class="text-xl font-semibold text-white mb-4">Statistiques détaillées</h2>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- Chart 1: Dépenses par catégorie (barres verticales) -->
-       <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-4">
-        <h3 class="text-sm font-semibold text-slate-100 mb-3">Dépenses par catégorie</h3>
-        <div class="h-64 flex items-end justify-around gap-2 px-2">
-         <div id="vertical-chart" class="w-full h-full flex items-end justify-around gap-3"><!-- Barres verticales créées en JS -->
-         </div>
+
+      <div class="flex justify-start border-b border-slate-700 mb-4">
+        <button id="tab-depenses" data-target="chart-depenses" class="tab-button py-2 px-4 text-sm font-medium text-white border-b-2 border-orange-500 transition-colors">Dépenses par catégorie</button>
+        <button id="tab-utilisation" data-target="chart-utilisation" class="tab-button py-2 px-4 text-sm font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 hover:border-slate-500 transition-colors">Taux d'utilisation des plafonds</button>
+        <button id="tab-recherche" data-target="chart-recherche" class="tab-button py-2 px-4 text-sm font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 hover:border-slate-500 transition-colors">Recherche Catégorie</button>
+      </div>
+
+      <div id="charts-container" class="rounded-xl bg-slate-900/60 border border-slate-700 p-4">
+
+        <div id="chart-depenses" class="chart-panel">
+          <h3 class="text-sm font-semibold text-slate-100 mb-3">Dépenses par catégorie</h3>
+          <div class="h-64 flex items-end justify-around gap-2 px-2">
+           <div id="vertical-chart" class="w-full h-full flex items-end justify-around gap-3"></div>
+          </div>
         </div>
-       </div><!-- Chart 2: Taux d'utilisation (barres horizontales) -->
-       <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-4">
-        <h3 class="text-sm font-semibold text-slate-100 mb-3">Taux d'utilisation des plafonds</h3>
-        <div class="h-64 flex flex-col justify-center gap-4 px-2">
-         <div id="usage-chart" class="w-full flex flex-col gap-3"><!-- Barres horizontales créées en JS -->
-         </div>
+
+        <div id="chart-utilisation" class="chart-panel hidden">
+          <h3 class="text-sm font-semibold text-slate-100 mb-3">Taux d'utilisation des plafonds</h3>
+          <div class="h-64 flex flex-col justify-center gap-4 px-2">
+           <div id="usage-chart" class="w-full flex flex-col gap-3"></div>
+          </div>
         </div>
-       </div><!-- Chart 3: Ratio dépensé vs restant -->
-       <div class="rounded-xl bg-slate-900/60 border border-slate-700 p-4 lg:col-span-2">
-        <h3 class="text-sm font-semibold text-slate-100 mb-3">Répartition : Dépensé vs Restant</h3>
-        <div class="flex items-center gap-3 text-xs text-slate-300 mb-3"><span class="inline-flex items-center gap-1"> <span class="inline-block w-3 h-3 rounded-sm bg-gradient-to-r from-blue-500 to-blue-600"></span> Dépensé </span> <span class="inline-flex items-center gap-1"> <span class="inline-block w-3 h-3 rounded-sm bg-slate-700"></span> Restant </span>
+        
+        <div id="chart-recherche" class="chart-panel hidden">
+          <h3 class="text-sm font-semibold text-slate-100 mb-3">Rechercher les détails d'une catégorie</h3>
+          
+          <div class="mb-4">
+            <label for="search-category-select" class="block text-sm font-medium text-slate-200 mb-1">Sélectionner une catégorie</label>
+            <select id="search-category-select" name="search-category-select" class="w-full rounded-lg border border-slate-600 bg-slate-800/80 text-slate-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400">
+              </select>
+          </div>
+          
+          <div class="bg-slate-800/80 rounded-lg p-4 border border-slate-700 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-sm font-medium text-slate-300">Dépenses totales:</span>
+              <span id="search-depense-total" class="text-lg font-bold text-orange-400">0€</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm font-medium text-slate-300">Plafond fixé:</span>
+              <span id="search-plafond" class="text-lg font-bold text-emerald-400">0€</span>
+            </div>
+          </div>
+          
+          <p id="search-status" class="mt-2 text-xs text-slate-400 text-center"></p>
         </div>
-        <div class="flex flex-col gap-4 px-2">
-         <div id="ratio-chart" class="w-full flex flex-col gap-4"><!-- Barres de ratio créées en JS -->
-         </div>
-        </div>
-       </div>
+
       </div>
      </section>
     </div>
@@ -124,7 +131,6 @@
       main_title: "Gestion des dépenses",
       subtitle: "Suivez vos plafonds et vos dépenses par catégorie.",
       category_section_title: "Catégories et plafonds",
-      dashboard_section_title: "Vue d'ensemble",
       save_limit_label: "Enregistrer",
       footer_text: "Exemple de dashboard de gestion de dépenses."
     };
@@ -137,7 +143,6 @@
       const titleEl = document.getElementById("main-title");
       const subtitleEl = document.getElementById("subtitle");
       const catTitleEl = document.getElementById("categories-title");
-      const dashTitleEl = document.getElementById("dashboard-title");
       const saveLimitBtn = document.getElementById("save-limit-btn");
       const footerText = document.getElementById("footer-text");
 
@@ -177,14 +182,6 @@
         catTitleEl.style.fontSize = baseSize * 1.1 + "px";
         catTitleEl.style.color = cfg.text_color || defaultConfig.text_color;
       }
-
-      if (dashTitleEl) {
-        dashTitleEl.textContent = cfg.dashboard_section_title || defaultConfig.dashboard_section_title;
-        dashTitleEl.style.fontFamily = fullFontStack;
-        dashTitleEl.style.fontSize = baseSize * 1.1 + "px";
-        dashTitleEl.style.color = cfg.text_color || defaultConfig.text_color;
-      }
-
 
 
       if (saveLimitBtn) {
@@ -285,7 +282,6 @@
             ["main_title", cfg.main_title || defaultConfig.main_title],
             ["subtitle", cfg.subtitle || defaultConfig.subtitle],
             ["category_section_title", cfg.category_section_title || defaultConfig.category_section_title],
-            ["dashboard_section_title", cfg.dashboard_section_title || defaultConfig.dashboard_section_title],
             ["save_limit_label", cfg.save_limit_label || defaultConfig.save_limit_label]
           ]);
         }
@@ -298,20 +294,58 @@
     }
 
     // --------- LOGIQUE DE GESTION DES DÉPENSES ---------
+    
+    // NOUVEAU: Données organisées par mois
+    const monthlyData = {
+        "2025-12": { // Mois courant (simulé)
+            nom: "Décembre 2025",
+            categories: [
+                { id: "logement", nom: "Logement", plafond: 1200, depense: 750 },
+                { id: "courses", nom: "Courses", plafond: 400, depense: 410 },
+                { id: "transport", nom: "Transport", plafond: 150, depense: 120 },
+                { id: "loisirs", nom: "Loisirs", plafond: 200, depense: 50 }
+            ]
+        },
+        "2025-11": {
+            nom: "Novembre 2025",
+            categories: [
+                { id: "logement", nom: "Logement", plafond: 1200, depense: 1200 },
+                { id: "courses", nom: "Courses", plafond: 400, depense: 350 },
+                { id: "transport", nom: "Transport", plafond: 150, depense: 160 },
+                { id: "loisirs", nom: "Loisirs", plafond: 200, depense: 180 }
+            ]
+        },
+        "2025-10": {
+            nom: "Octobre 2025",
+            categories: [
+                { id: "logement", nom: "Logement", plafond: 1100, depense: 1100 },
+                { id: "courses", nom: "Courses", plafond: 300, depense: 280 },
+                { id: "transport", nom: "Transport", plafond: 150, depense: 100 },
+                { id: "loisirs", nom: "Loisirs", plafond: 250, depense: 30 }
+            ]
+        }
+    };
+    
+    const currentMonthKey = "2025-12"; 
+    let selectedMonthKey = currentMonthKey;
+    let selectedCategoryId = monthlyData[selectedMonthKey].categories[0].id;
+    let searchedCategoryId = monthlyData[selectedMonthKey].categories[0].id;
 
-    const categories = [
-      { id: "logement", nom: "Logement", plafond: 1200, depense: 0 },
-      { id: "courses", nom: "Courses", plafond: 400, depense: 0 },
-      { id: "transport", nom: "Transport", plafond: 150, depense: 0 },
-      { id: "loisirs", nom: "Loisirs", plafond: 200, depense: 0 }
-    ];
-
-    let selectedCategoryId = categories[0].id;
-
+    // Éléments DOM
     const categorySelect = document.getElementById("category-select");
     const limitInput = document.getElementById("limit-input");
     const limitForm = document.getElementById("limit-form");
     const messageBox = document.getElementById("message-box");
+    const searchCategorySelect = document.getElementById("search-category-select");
+    const searchDepenseTotal = document.getElementById("search-depense-total");
+    const searchPlafond = document.getElementById("search-plafond");
+    const searchStatus = document.getElementById("search-status");
+    const monthSelect = document.getElementById("month-select");
+    const currentMonthIndicator = document.getElementById("current-month-indicator");
+
+    function getActiveCategories() {
+        return monthlyData[selectedMonthKey].categories;
+    }
 
     function showMessage(text, type) {
       if (!messageBox) return;
@@ -333,13 +367,66 @@
     }
 
     function getSelectedCategory() {
+      const categories = getActiveCategories();
       return categories.find(function (c) { return c.id === selectedCategoryId; }) || categories[0];
     }
+    
+    function getSearchedCategory() {
+      const categories = getActiveCategories();
+      return categories.find(function (c) { return c.id === searchedCategoryId; }) || categories[0];
+    }
+    
+    // NOUVEAU: Mettre à jour les données affichées après un changement de mois
+    function updateAllViews() {
+        const isCurrentMonth = selectedMonthKey === currentMonthKey;
+        
+        // Gérer l'indicateur "Mois en cours"
+        if (currentMonthIndicator) {
+            currentMonthIndicator.classList.toggle('hidden', !isCurrentMonth);
+        }
+        
+        // Bloquer la modification du plafond si ce n'est pas le mois en cours
+        if (limitInput) limitInput.disabled = !isCurrentMonth;
+        const saveBtn = document.getElementById("save-limit-btn");
+        if (saveBtn) saveBtn.disabled = !isCurrentMonth;
+        
+        // Afficher un message d'information si le mois est historique
+        if (!isCurrentMonth) {
+            showMessage(`Affichage des données pour ${monthlyData[selectedMonthKey].nom}. La modification des plafonds est désactivée.`, "info");
+        } else {
+             messageBox.classList.add("hidden");
+        }
+        
+        // Mettre à jour les autres sélecteurs/affichages
+        refreshCategorySelect();
+        refreshSearchCategorySelect();
+        updateLimitInput();
+        updateSearchDisplay();
+        redrawChart();
+    }
+    
+    // NOUVEAU: Remplir le sélecteur de mois
+    function refreshMonthSelect() {
+        if (!monthSelect) return;
+        monthSelect.innerHTML = "";
+        
+        Object.keys(monthlyData).reverse().forEach(function(key) {
+            const opt = document.createElement("option");
+            opt.value = key;
+            opt.textContent = monthlyData[key].nom;
+            if (key === selectedMonthKey) opt.selected = true;
+            monthSelect.appendChild(opt);
+        });
+        
+        // Déclenchement de la vue initiale
+        updateAllViews();
+    }
+
 
     function refreshCategorySelect() {
       if (!categorySelect) return;
       categorySelect.innerHTML = "";
-      categories.forEach(function (cat) {
+      getActiveCategories().forEach(function (cat) {
         const opt = document.createElement("option");
         opt.value = cat.id;
         opt.textContent = cat.nom;
@@ -348,9 +435,46 @@
       });
     }
 
+    function refreshSearchCategorySelect() {
+      if (!searchCategorySelect) return;
+      searchCategorySelect.innerHTML = "";
+      getActiveCategories().forEach(function (cat) {
+        const opt = document.createElement("option");
+        opt.value = cat.id;
+        opt.textContent = cat.nom;
+        if (cat.id === searchedCategoryId) opt.selected = true;
+        searchCategorySelect.appendChild(opt);
+      });
+    }
+
     function updateLimitInput() {
       const cat = getSelectedCategory();
       if (limitInput) limitInput.value = (cat.plafond || 0).toString();
+    }
+
+    function updateSearchDisplay() {
+      const cat = getSearchedCategory();
+      if (!searchDepenseTotal || !searchPlafond || !searchStatus) return;
+      
+      const depense = cat.depense || 0;
+      const plafond = cat.plafond || 0;
+      
+      searchDepenseTotal.textContent = depense.toFixed(0) + "€";
+      searchPlafond.textContent = plafond.toFixed(0) + "€";
+      
+      if (depense > plafond && plafond > 0) {
+        searchStatus.textContent = `Attention: ${cat.nom} dépasse le plafond de ${(depense - plafond).toFixed(0)}€.`;
+        searchStatus.classList.remove("text-slate-400", "text-emerald-400");
+        searchStatus.classList.add("text-red-400");
+      } else if (depense > 0 && plafond > 0) {
+        searchStatus.textContent = `${cat.nom} est à ${((depense / plafond) * 100).toFixed(0)}% d'utilisation de son plafond.`;
+        searchStatus.classList.remove("text-slate-400", "text-red-400");
+        searchStatus.classList.add("text-emerald-400");
+      } else {
+         searchStatus.textContent = `Dépenses de ${cat.nom} : ${depense.toFixed(0)}€. Plafond : ${plafond.toFixed(0)}€.`;
+         searchStatus.classList.remove("text-red-400", "text-emerald-400");
+         searchStatus.classList.add("text-slate-400");
+      }
     }
 
     const categoryColors = [
@@ -361,89 +485,15 @@
     ];
 
     function redrawChart() {
-      const container = document.getElementById("chart-container");
-      if (!container) return;
-
-      container.innerHTML = "";
-
-      const maxPlafond = categories.reduce(function (max, cat) {
-        return Math.max(max, cat.plafond || 0, cat.depense || 0);
-      }, 0) || 1;
-
-      categories.forEach(function (cat, index) {
-        const plafond = cat.plafond || 0;
-        const depense = cat.depense || 0;
-        const ratioPlafond = plafond / maxPlafond;
-        const ratioDepense = Math.min(depense / maxPlafond, 1);
-        const percent = plafond > 0 ? Math.round((depense / plafond) * 100) : 0;
-
-        const colorScheme = categoryColors[index % categoryColors.length];
-
-        const row = document.createElement("div");
-        row.className = "flex flex-col gap-1";
-
-        const topRow = document.createElement("div");
-        topRow.className = "flex items-center justify-between gap-2";
-        
-        const labelContainer = document.createElement("div");
-        labelContainer.className = "flex items-center gap-2";
-        
-        const colorDot = document.createElement("span");
-        colorDot.className = "inline-block w-3 h-3 rounded-full shadow-sm";
-        colorDot.style.background = colorScheme.bg;
-        
-        const label = document.createElement("span");
-        label.className = "text-xs font-medium text-slate-100";
-        label.textContent = cat.nom;
-        
-        labelContainer.appendChild(colorDot);
-        labelContainer.appendChild(label);
-        
-        const info = document.createElement("span");
-        info.className = "text-[11px] font-medium";
-        info.style.color = colorScheme.light;
-        info.textContent = depense.toFixed(2) + "€ / " + plafond.toFixed(0) + "€ (" + percent + "%)";
-        
-        topRow.appendChild(labelContainer);
-        topRow.appendChild(info);
-
-        const barBg = document.createElement("div");
-        barBg.className = "w-full rounded-full bg-slate-700/50 overflow-hidden h-5 shadow-inner";
-
-        const barPlafond = document.createElement("div");
-        barPlafond.className = "relative w-full h-full";
-        barPlafond.style.backgroundColor = "#1e293b";
-
-        const barUsed = document.createElement("div");
-        barUsed.className = "absolute left-0 top-0 h-full rounded-full shadow-lg transition-all duration-300";
-        barUsed.style.width = (ratioDepense * 100).toFixed(1) + "%";
-        barUsed.style.background = colorScheme.bg;
-        barUsed.style.boxShadow = "0 0 10px " + colorScheme.light + "40";
-
-        const barLimitOutline = document.createElement("div");
-        barLimitOutline.className = "absolute left-0 top-0 h-full rounded-full border-2 border-dashed";
-        barLimitOutline.style.width = (ratioPlafond * 100).toFixed(1) + "%";
-        barLimitOutline.style.borderColor = colorScheme.light + "60";
-
-        barPlafond.appendChild(barUsed);
-        barPlafond.appendChild(barLimitOutline);
-        barBg.appendChild(barPlafond);
-
-        row.appendChild(topRow);
-        row.appendChild(barBg);
-        container.appendChild(row);
-      });
-
-      // Redessiner tous les autres graphiques
       drawVerticalChart();
       drawUsageChart();
-      drawRatioChart();
     }
 
     function drawVerticalChart() {
       const container = document.getElementById("vertical-chart");
       if (!container) return;
       container.innerHTML = "";
+      const categories = getActiveCategories();
 
       const maxDepense = Math.max(...categories.map(function(c) { return c.depense || 0; }), 1);
 
@@ -486,6 +536,7 @@
       const container = document.getElementById("usage-chart");
       if (!container) return;
       container.innerHTML = "";
+      const categories = getActiveCategories();
 
       categories.forEach(function (cat, index) {
         const plafond = cat.plafond || 0;
@@ -525,104 +576,58 @@
         container.appendChild(row);
       });
     }
+    
+    function setupTabs() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const chartPanels = document.querySelectorAll('.chart-panel');
 
-    function drawRatioChart() {
-      const container = document.getElementById("ratio-chart");
-      if (!container) return;
-      container.innerHTML = "";
+        function activateTab(targetId) {
+            tabButtons.forEach(button => {
+                const isActive = button.getAttribute('data-target') === targetId;
+                button.classList.toggle('text-white', isActive);
+                button.classList.toggle('text-slate-400', !isActive);
+                button.classList.toggle('border-orange-500', isActive);
+                button.classList.toggle('border-transparent', !isActive);
+                button.classList.toggle('hover:border-slate-500', !isActive);
+                button.classList.toggle('hover:text-slate-200', !isActive);
+                
+                if (targetId === 'chart-recherche' && isActive) {
+                    updateSearchDisplay();
+                }
+            });
 
-      categories.forEach(function (cat, index) {
-        const plafond = cat.plafond || 0;
-        const depense = cat.depense || 0;
-        const remaining = Math.max(plafond - depense, 0);
-        
-        const depensePercent = plafond > 0 ? (depense / plafond) * 100 : 0;
-        const remainingPercent = plafond > 0 ? (remaining / plafond) * 100 : 100;
-        
-        const colorScheme = categoryColors[index % categoryColors.length];
-
-        const row = document.createElement("div");
-        row.className = "flex flex-col gap-2";
-
-        // En-tête avec nom et montants
-        const header = document.createElement("div");
-        header.className = "flex items-center justify-between";
-
-        const nameLabel = document.createElement("div");
-        nameLabel.className = "flex items-center gap-2";
-        
-        const colorDot = document.createElement("span");
-        colorDot.className = "inline-block w-3 h-3 rounded-full";
-        colorDot.style.background = colorScheme.bg;
-        
-        const name = document.createElement("span");
-        name.className = "text-sm font-medium text-slate-100";
-        name.textContent = cat.nom;
-        
-        nameLabel.appendChild(colorDot);
-        nameLabel.appendChild(name);
-
-        const amounts = document.createElement("div");
-        amounts.className = "flex items-center gap-3 text-xs";
-        
-        const depenseLabel = document.createElement("span");
-        depenseLabel.className = "font-semibold";
-        depenseLabel.style.color = colorScheme.light;
-        depenseLabel.textContent = depense.toFixed(0) + "€ dépensé";
-        
-        const remainingLabel = document.createElement("span");
-        remainingLabel.className = "text-slate-400";
-        remainingLabel.textContent = remaining.toFixed(0) + "€ restant";
-        
-        amounts.appendChild(depenseLabel);
-        amounts.appendChild(remainingLabel);
-
-        header.appendChild(nameLabel);
-        header.appendChild(amounts);
-
-        // Barre de ratio
-        const barContainer = document.createElement("div");
-        barContainer.className = "w-full h-8 rounded-full bg-slate-700/50 overflow-hidden flex";
-
-        // Partie dépensée
-        const barDepense = document.createElement("div");
-        barDepense.className = "h-full transition-all duration-500 flex items-center justify-center";
-        barDepense.style.width = Math.max(depensePercent, 0) + "%";
-        barDepense.style.background = colorScheme.bg;
-        barDepense.style.boxShadow = "0 0 15px " + colorScheme.light + "40";
-        
-        if (depensePercent > 10) {
-          const depenseText = document.createElement("span");
-          depenseText.className = "text-xs font-bold text-white";
-          depenseText.textContent = Math.round(depensePercent) + "%";
-          barDepense.appendChild(depenseText);
+            chartPanels.forEach(panel => {
+                const isActive = panel.id === targetId;
+                panel.classList.toggle('hidden', !isActive);
+            });
         }
 
-        // Partie restante
-        const barRemaining = document.createElement("div");
-        barRemaining.className = "h-full bg-slate-700 transition-all duration-500 flex items-center justify-center";
-        barRemaining.style.width = Math.max(remainingPercent, 0) + "%";
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                activateTab(targetId);
+            });
+        });
         
-        if (remainingPercent > 10) {
-          const remainingText = document.createElement("span");
-          remainingText.className = "text-xs font-medium text-slate-300";
-          remainingText.textContent = Math.round(remainingPercent) + "%";
-          barRemaining.appendChild(remainingText);
-        }
-
-        barContainer.appendChild(barDepense);
-        barContainer.appendChild(barRemaining);
-
-        row.appendChild(header);
-        row.appendChild(barContainer);
-        container.appendChild(row);
-      });
+        activateTab('chart-depenses');
     }
 
+
     document.addEventListener("DOMContentLoaded", function () {
-      refreshCategorySelect();
-      updateLimitInput();
-      redrawChart();
+      
+      refreshMonthSelect(); // NOUVEAU: Initialiser le sélecteur de mois
+      setupTabs(); 
+
+      // NOUVEAU: Écouteur pour le changement de mois
+      if (monthSelect) {
+        monthSelect.addEventListener("change", function(e) {
+            selectedMonthKey = e.target.value;
+            // Réinitialiser la catégorie sélectionnée (pour éviter d'avoir une catégorie qui n'existe pas dans le nouveau mois, bien que peu probable ici)
+            selectedCategoryId = getActiveCategories()[0].id; 
+            searchedCategoryId = getActiveCategories()[0].id;
+            updateAllViews();
+        });
+      }
 
       if (categorySelect) {
         categorySelect.addEventListener("change", function (e) {
@@ -630,10 +635,24 @@
           updateLimitInput();
         });
       }
+      
+      if (searchCategorySelect) {
+          searchCategorySelect.addEventListener("change", function(e) {
+              searchedCategoryId = e.target.value;
+              updateSearchDisplay();
+          });
+      }
 
       if (limitForm) {
         limitForm.addEventListener("submit", function (e) {
           e.preventDefault();
+          
+          // Vérification supplémentaire si ce n'est pas le mois en cours
+          if (selectedMonthKey !== currentMonthKey) {
+             showMessage("La modification des plafonds est seulement permise pour le mois en cours.", "error");
+             return;
+          }
+          
           const cat = getSelectedCategory();
           const value = Number(limitInput.value);
           if (isNaN(value) || value < 0) {
@@ -641,8 +660,9 @@
             return;
           }
           cat.plafond = value;
-          updateLimitInput();
-          redrawChart();
+          
+          // Mise à jour de toutes les vues après modification
+          updateAllViews();
           showMessage("Plafond mis à jour pour " + cat.nom + ".", "success");
         });
       }
@@ -653,5 +673,5 @@
       }
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a853ea283c214ab',t:'MTc2NDc4Nzc3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a853a6601363cc1',t:'MTc2NDc4NzYwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
