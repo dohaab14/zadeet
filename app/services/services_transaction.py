@@ -21,3 +21,21 @@ def get_recent_transactions(db: Session, limit: int = 3):
              .order_by(models.Transaction.date.desc())\
              .limit(limit)\
              .all()
+
+def search_by_amount(db: Session, amount: float, tolerance: float = 0.01):
+    """
+    Recherche les transactions correspondant à un montant donné.
+    
+    Args:
+        db: Session SQLAlchemy
+        amount: Montant à rechercher
+        tolerance: Marge d'erreur acceptée (par défaut 0.01€)
+    
+    Returns:
+        Liste des transactions trouvées
+    """
+    return db.query(models.Transaction)\
+        .filter(models.Transaction.amount >= amount - tolerance)\
+        .filter(models.Transaction.amount <= amount + tolerance)\
+        .all()
+
