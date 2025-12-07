@@ -39,3 +39,22 @@ def search_by_amount(db: Session, amount: float, tolerance: float = 0.01):
         .filter(models.Transaction.amount <= amount + tolerance)\
         .all()
 
+def search_by_amount_and_category(db: Session, amount: float, category_name: str, tolerance: float = 0.01):
+    """
+    Recherche les transactions par montant et catégorie.
+    
+    Args:
+        db: Session SQLAlchemy
+        amount: Montant à rechercher
+        category_name: Nom de la catégorie
+        tolerance: Marge d'erreur sur le montant (par défaut 0.01€)
+    
+    Returns:
+        Liste des transactions correspondantes
+    """
+    return db.query(models.Transaction)\
+        .join(models.Category)\
+        .filter(models.Transaction.amount >= amount - tolerance)\
+        .filter(models.Transaction.amount <= amount + tolerance)\
+        .filter(models.Category.name == category_name)\
+        .all()
