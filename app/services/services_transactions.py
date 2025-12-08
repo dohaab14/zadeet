@@ -8,6 +8,8 @@ from datetime import datetime
 from app.db.models import Transaction
 from app.db.schemas import TransactionCreate, TransactionUpdate
 from . import services_categories
+from sqlalchemy import func
+from app.db.models import Transaction as TransactionModel
 
 
 def create_transaction(db: Session, data: TransactionCreate):
@@ -46,15 +48,26 @@ def delete_transaction(db: Session, transaction: Transaction):
     return True
 
 
-def get_transactions(db: Session, category_id: int | None = None):
+def get_transactions(
+    db: Session,
+    category_id: int | None = None,
+    search: str | None = None,
+):
     """
-    Récupère toutes les transactions ou les transactions d'une catégorie spécifique
-    return: liste des transactions
+    Récupère les transactions, avec filtres optionnels :
+    - category_id : filtre par catégorie
+    - search      : filtre sur le label (contient, insensible à la casse)
     """
-    query = db.query(Transaction)
+    query = db.query(TransactionModel)
 
     if category_id is not None:
-        query = query.filter(Transaction.category_id == category_id)
+        query = query.filter(TransactionModel.category_id == category_id)
+
+    if search:
+        pattern = f"%{search}%"
+        query = query.filter(
+            func.lower(TransactionModel.label).like(func.lower(pattern))
+        )
 
     return query.all()
 

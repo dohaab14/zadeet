@@ -98,7 +98,30 @@
       {% endif %}
     </div>
   </section>
-
+  <!-- Formulaire de recherche -->
+    <form method="get" action="/transactions/page" class="card shadow-sm mb-4">
+        <div class="card-body">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-6">
+              <label for="searchInput" class="form-label small mb-1">Rechercher une dépense</label>
+              <input
+                type="text"
+                id="searchInput"
+                name="search"
+                class="form-control"
+                placeholder="Ex : Uber, Carrefour, Netflix..."
+                value="{{ search if search is defined else '' }}"
+              >
+            </div>
+            <div class="col-md-2 d-grid">
+              <button type="submit" class="btn btn-primary mt-3 mt-md-0">
+                Filtrer
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    
   <!-- Liste complète des transactions -->
   <section class="card shadow-sm mb-4">
     <div class="card-body">

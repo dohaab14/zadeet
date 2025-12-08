@@ -3,12 +3,16 @@ from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
 from typing import List
+from typing import Optional
 
 from app.db.database import SessionLocal
-from app.db.models import Transaction
-from app.db.schemas import Transaction, TransactionCreate, TransactionUpdate
+from app.db.models import Transaction as TransactionModel   # <-- FIX 1 : alias modèle SQLA
+from app.db.schemas import Transaction as TransactionSchema # <-- FIX 1 : alias schéma Pydantic
+from app.db.schemas import TransactionCreate, TransactionUpdate
+
 from app.services import services_transactions as transaction_service
 from app.services import services_categories as category_service
+
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
@@ -23,23 +27,55 @@ def get_db():
         db.close()
 
 
+# ---------------------------------------------------------
+# PAGE HTML PRINCIPALE
+# ---------------------------------------------------------
+
 @router.get("/page", response_class=HTMLResponse)
-def transactions_page(request: Request, db: Session = Depends(get_db)):
+def transactions_page(
+    request: Request,
+    search: Optional[str] = None,          # <-- récupère ?search=...
+    db: Session = Depends(get_db),
+):
     """
-    Affiche la page HTML des transactions avec aperçu et stats
+    Affiche la page HTML des transactions avec aperçu et stats,
+    avec possibilité de filtrer par nom de dépense.
     """
+    # 1) Récupérer l'overview (totaux, etc.)
     overview = transaction_service.get_transactions_overview(db)
+
+    # 2) Forcer la liste des catégories à être complète
+    categories = category_service.get_categories(db)
+    overview["categories"] = categories
+
+    # 3) Récupérer les transactions FILTRÉES
+    filtered_txns = transaction_service.get_transactions(
+        db=db,
+        search=search,   # <-- ICI on passe bien le search
+    )
+    overview["transactions"] = filtered_txns  
+
+    # 4) Passer 'search' au template pour pré-remplir l'input
     return templates.TemplateResponse(
         "transactions.html",
-        {"request": request, **overview}
+        {
+            "request": request,
+            **overview,
+            "search": search or "",
+        }
     )
 
-
-@router.get("/", response_model=List[Transaction])
+# ---------------------------------------------------------
+# API JSON : toutes les transactions
+# ---------------------------------------------------------
+@router.get("/", response_model=List[TransactionSchema])
 def list_transactions(category_id: int | None = None, db: Session = Depends(get_db)):
-    return transaction_service.get_transactions(db, category_id)
+    return transaction_service.get_transactions(db, category_id,search=search,)
 
 
+# ---------------------------------------------------------
+# CRÉATION FORMULAIRE (depuis modal)
+# ---------------------------------------------------------
 @router.post("/")
 def create_transaction_from_form(
     label: str = Form(...),
@@ -57,12 +93,12 @@ def create_transaction_from_form(
     return RedirectResponse(url="/transactions/page", status_code=303)
 
 
+# ---------------------------------------------------------
+# FORMULAIRE DE SUPPRESSION
+# ---------------------------------------------------------
 @router.post("/{transaction_id}")
 def handle_transaction_form(transaction_id: int, method: str = Form(...), db: Session = Depends(get_db)):
-    """
-    Gère les formulaires HTML envoyés sur /transactions/{id}.
-    Pour l'instant, on ne gère que la suppression via method=delete.
-    """
+
     if method.lower() != "delete":
         raise HTTPException(status_code=405, detail="Méthode non supportée")
 
@@ -74,7 +110,10 @@ def handle_transaction_form(transaction_id: int, method: str = Form(...), db: Se
     return RedirectResponse(url="/transactions/page", status_code=303)
 
 
-@router.put("/{transaction_id}", response_model=Transaction)
+# ---------------------------------------------------------
+# MISE À JOUR API
+# ---------------------------------------------------------
+@router.put("/{transaction_id}", response_model=TransactionSchema)
 def update_transaction(transaction_id: int, data: TransactionUpdate, db: Session = Depends(get_db)):
     txn = transaction_service.get_transaction(db, transaction_id)
     if not txn:
@@ -82,14 +121,20 @@ def update_transaction(transaction_id: int, data: TransactionUpdate, db: Session
     return transaction_service.update_transaction(db, txn, data)
 
 
-@router.get("/monthly-transactions", response_model=List[Transaction])
+# ---------------------------------------------------------
+# API PAR MOIS
+# ---------------------------------------------------------
+@router.get("/monthly-transactions", response_model=List[TransactionSchema])
 def get_transactions_by_month_api(year: int, month: int, db: Session = Depends(get_db)):
-    return db.query(Transaction).filter(
-        extract('year', Transaction.date) == year,
-        extract('month', Transaction.date) == month
+    return db.query(TransactionModel).filter(
+        extract('year', TransactionModel.date) == year,
+        extract('month', TransactionModel.date) == month
     ).all()
 
 
-@router.get("/recent-transactions", response_model=List[Transaction])
+# ---------------------------------------------------------
+# API DERNIÈRES TRANSACTIONS
+# ---------------------------------------------------------
+@router.get("/recent-transactions", response_model=List[TransactionSchema])
 def get_recent_transactions_api(limit: int = 3, db: Session = Depends(get_db)):
-    return db.query(Transaction).order_by(Transaction.date.desc()).limit(limit).all()
+    return db.query(TransactionModel).order_by(TransactionModel.date.desc()).limit(limit).all()
