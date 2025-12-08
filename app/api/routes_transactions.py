@@ -23,21 +23,19 @@ def get_db():
         db.close()
 
 
-@router.get("/page", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse)
 def transactions_page(request: Request, db: Session = Depends(get_db)):
-    """
-    Affiche la page HTML des transactions avec aperçu et stats
-    """
     overview = transaction_service.get_transactions_overview(db)
-    return templates.TemplateResponse(
-        "transactions.html",
-        {"request": request, **overview}
-    )
+    return templates.TemplateResponse("transactions.html", {
+        "request": request,
+        **overview
+    })
 
-
-@router.get("/", response_model=List[Transaction])
+"""@router.get("/", response_model=List[Transaction])
 def list_transactions(category_id: int | None = None, db: Session = Depends(get_db)):
     return transaction_service.get_transactions(db, category_id)
+"""
+
 
 
 @router.post("/")
