@@ -1,242 +1,199 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8">
-    <title>Gestionnaire de Dépenses - Transactions</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestionnaire de Dépenses - Transactions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f0f2f5; }
+    .card { margin-bottom: 1rem; }
+    .fw-semibold { font-weight: 600; }
+  </style>
+</head>
+<body>
 
-    <!-- Bootstrap uniquement -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    >
-  </head>
-  <body class="bg-light">
+<div class="container py-4">
 
-    <div class="container py-4">
-      <!-- Header -->
-      <header class="text-center mb-4">
-        <h1 class="fw-bold">Gestionnaire de Dépenses - Transactions</h1>
-      </header>
+  <!-- Header -->
+  <header class="text-center mb-4">
+    <h1 class="fw-bold">Gestionnaire de Dépenses - Transactions</h1>
+  </header>
 
-      <!-- Stats -->
-      <section class="card shadow-sm mb-4">
-        <div class="card-body">
-          <div class="row text-center">
-            <div class="col-md-4 mb-3 mb-md-0">
-              <div class="fw-semibold text-secondary text-uppercase small">Total Dépenses</div>
-              <div class="fs-3 fw-bold text-primary">{{ '%.2f' | format(total_expenses or 0) }} €</div>
-            </div>
-            <div class="col-md-4 mb-3 mb-md-0">
-              <div class="fw-semibold text-secondary text-uppercase small">Catégories</div>
-              <div class="fs-3 fw-bold">{{ total_categories }}</div>
-            </div>
-            <div class="col-md-4">
-              <div class="fw-semibold text-secondary text-uppercase small">Transactions</div>
-              <div class="fs-3 fw-bold">{{ total_transactions }}</div>
-            </div>
-          </div>
+  <!-- Stats -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row text-center">
+        <div class="col-md-4 mb-3 mb-md-0">
+          <div class="fw-semibold text-secondary text-uppercase small">Total Dépenses</div>
+          <div class="fs-3 fw-bold text-primary">{{ '%.2f' | format(total_expenses or 0) }} €</div>
         </div>
-      </section>
-
-      <!-- Boutons d'action -->
-      <section class="d-flex flex-column flex-md-row gap-2 mb-4">
-        <button class="btn btn-primary flex-fill" data-bs-toggle="modal" data-bs-target="#expenseModal">
-          Ajouter une dépense
-        </button>
-        <a href="/categories/" class="btn btn-secondary flex-fill text-center">Gérer les catégories</a>
-      </section>
-
-      <div class="row">
-        <!-- Colonne catégories -->
-        <div class="col-lg-4 mb-4">
-          <section class="card shadow-sm h-100">
-            <div class="card-body">
-              <h2 class="h5 mb-3">Catégories</h2>
-              {% if categories %}
-                <ul class="list-group list-group-flush">
-                  {% for cat in categories %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <span>{{ cat.name }}</span>
-                    </li>
-                  {% endfor %}
-                </ul>
-              {% else %}
-                <div class="text-center text-muted py-4">
-                  <div class="fs-1">📁</div>
-                  <p class="mb-0">Aucune catégorie. Créez-en une sur la page "Catégories".</p>
-                </div>
-              {% endif %}
-            </div>
-          </section>
+        <div class="col-md-4 mb-3 mb-md-0">
+          <div class="fw-semibold text-secondary text-uppercase small">Catégories</div>
+          <div class="fs-3 fw-bold">{{ total_categories }}</div>
         </div>
-
-        <!-- Colonne transactions -->
-        <div class="col-lg-8 mb-4">
-          <section class="card shadow-sm h-100">
-            <div class="card-body">
-              <h2 class="h5 mb-3">Dépenses</h2>
-              {% if transactions %}
-                <div class="list-group">
-                  {% for t in transactions %}
-                    <div class="list-group-item mb-2">
-                      <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                          <div class="fw-bold">{{ t.label or 'Dépense' }}</div>
-                          <div class="small text-muted">
-                            {% if t.category %}
-                              Catégorie : {{ t.category.name }} -
-                            {% else %}
-                              Sans catégorie -
-                            {% endif %}
-                            Date : {{ t.date.strftime('%Y-%m-%d') }}
-                          </div>
-                        </div>
-                        <div class="text-end ms-3">
-                          <div class="fw-bold text-primary">{{ '%.2f' | format(t.amount) }} €</div>
-                          <form method="post" action="/transactions/{{ t.id }}" class="mt-2">
-                            <input type="hidden" name="method" value="delete">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
-                          </form>
-                        </div>
-                      </div>
-                    </div>
-                  {% endfor %}
-                </div>
-              {% else %}
-                <div class="text-center text-muted py-4">
-                  <div class="fs-1">💰</div>
-                  <p class="mb-0">Aucune dépense enregistrée. Ajoutez votre première dépense !</p>
-                </div>
-              {% endif %}
-            </div>
-          </section>
+        <div class="col-md-4">
+          <div class="fw-semibold text-secondary text-uppercase small">Transactions</div>
+          <div class="fs-3 fw-bold">{{ total_transactions }}</div>
         </div>
       </div>
     </div>
-    <!-- Vue par catégorie -->
-    <section class="card shadow-sm mb-4">
-        <div class="card-body">
-          <h2 class="h5 mb-3">Dépenses par catégorie</h2>
-  
-          {# On récupère les transactions qui ont une catégorie #}
-          {% set txns_with_category = transactions | selectattr('category', 'ne', None) | list %}
-  
-          {% if txns_with_category %}
-            {% for group in txns_with_category | groupby('category.name') %}
-              <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <h3 class="h6 mb-0">{{ group.grouper }}</h3>
-                  <span class="badge bg-primary">
-                    {{
-                      '%.2f' | format(
-                        group.list | map(attribute='amount') | sum
-                      )
-                    }} €
-                  </span>
-                </div>
-  
-                <ul class="list-group">
-                  {% for t in group.list %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <div>
-                        <div class="fw-semibold">{{ t.label or 'Dépense' }}</div>
-                        <div class="small text-muted">
-                          Date : {{ t.date.strftime('%Y-%m-%d') }}
-                        </div>
-                      </div>
-                      <div class="fw-bold text-primary">
-                        {{ '%.2f' | format(t.amount) }} €
-                      </div>
-                    </li>
-                  {% endfor %}
-                </ul>
-              </div>
-            {% endfor %}
-          {% else %}
-            <div class="text-muted">
-              Aucune dépense avec catégorie pour le moment.
+  </section>
+
+  <!-- Boutons d'action -->
+  <section class="d-flex flex-column flex-md-row gap-2 mb-4">
+    <button class="btn btn-primary flex-fill" data-bs-toggle="modal" data-bs-target="#expenseModal">
+      Ajouter une dépense
+    </button>
+    <a href="/categories/page" class="btn btn-secondary flex-fill text-center">Gérer les catégories</a>
+  </section>
+
+  <!-- Dépenses par catégorie -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Dépenses par catégorie</h2>
+
+      {% set txns_with_category = transactions | selectattr('category', 'ne', None) | list %}
+      {% if txns_with_category %}
+        {% for group in txns_with_category | groupby('category.name') %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <h3 class="h6 mb-0">{{ group.grouper }}</h3>
+              <span class="badge bg-primary">
+                {{ '%.2f' | format(group.list | map(attribute='amount') | sum) }} €
+              </span>
             </div>
-          {% endif %}
-  
-          {# Cas spécial : transactions sans catégorie #}
-          {% set txns_no_category = transactions | selectattr('category', 'equalto', None) | list %}
-          {% if txns_no_category %}
-            <hr class="my-3">
-            <h3 class="h6">Sans catégorie</h3>
             <ul class="list-group">
-              {% for t in txns_no_category %}
+              {% for t in group.list %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   <div>
                     <div class="fw-semibold">{{ t.label or 'Dépense' }}</div>
-                    <div class="small text-muted">
-                      Date : {{ t.date.strftime('%Y-%m-%d') }}
-                    </div>
+                    <div class="small text-muted">Date : {{ t.date.strftime('%Y-%m-%d') }}</div>
                   </div>
-                  <div class="fw-bold text-primary">
-                    {{ '%.2f' | format(t.amount) }} €
-                  </div>
+                  <div class="fw-bold text-primary">{{ '%.2f' | format(t.amount) }} €</div>
                 </li>
               {% endfor %}
             </ul>
-          {% endif %}
-        </div>
-      </section>
-  
-    <!-- Modal Nouvelle Dépense -->
-    <div class="modal fade" id="expenseModal" tabindex="-1" aria-labelledby="expenseModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="expenseModalLabel">Nouvelle dépense</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
           </div>
-          <form method="post" action="/transactions/">
-            <div class="modal-body">
-              <input type="hidden" name="is_expense" value="true">
+        {% endfor %}
+      {% else %}
+        <div class="text-muted">Aucune dépense avec catégorie pour le moment.</div>
+      {% endif %}
 
-              <div class="mb-3">
-                <label for="expenseLabel" class="form-label">Nom de la dépense</label>
-                <input type="text" class="form-control" id="expenseLabel" name="label" required>
+      {% set txns_no_category = transactions | selectattr('category', 'equalto', None) | list %}
+      {% if txns_no_category %}
+        <hr class="my-3">
+        <h3 class="h6">Sans catégorie</h3>
+        <ul class="list-group">
+          {% for t in txns_no_category %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-semibold">{{ t.label or 'Dépense' }}</div>
+                <div class="small text-muted">Date : {{ t.date.strftime('%Y-%m-%d') }}</div>
               </div>
-
-              <div class="mb-3">
-                <label for="expenseAmount" class="form-label">Montant (€)</label>
-                <input type="number" class="form-control" id="expenseAmount" name="amount" step="0.01" required>
-              </div>
-
-              <div class="mb-3">
-                <label for="expenseCategory" class="form-label">Catégorie</label>
-                <select class="form-select" id="expenseCategory" name="category_id">
-                  <option value="">Sans catégorie</option>
-                  {% for cat in categories %}
-                    <option value="{{ cat.id }}">{{ cat.name }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div class="mb-3">
-                <label for="expenseDate" class="form-label">Date</label>
-                <input type="date" class="form-control" id="expenseDate" name="date" required>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-              <button type="submit" class="btn btn-primary">Enregistrer</button>
-            </div>
-          </form>
-        </div>
-      </div>
+              <div class="fw-bold text-primary">{{ '%.2f' | format(t.amount) }} €</div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
     </div>
+  </section>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-      const dateInput = document.getElementById('expenseDate');
-      if (dateInput && !dateInput.value) {
-        const today = new Date().toISOString().slice(0, 10);
-        dateInput.value = today;
-      }
-    </script>
-  </body>
+  <!-- Liste complète des transactions -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Toutes les transactions</h2>
+      {% if transactions %}
+        <div class="list-group">
+          {% for t in transactions %}
+            <div class="list-group-item mb-2 d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-bold">{{ t.label or 'Dépense' }}</div>
+                <div class="small text-muted">
+                  {% if t.category %}
+                    Catégorie : {{ t.category.name }} -
+                  {% else %}
+                    Sans catégorie -
+                  {% endif %}
+                  Date : {{ t.date.strftime('%Y-%m-%d') }}
+                </div>
+              </div>
+              <div class="text-end ms-3">
+                <div class="fw-bold text-primary">{{ '%.2f' | format(t.amount) }} €</div>
+                <form method="post" action="/transactions/{{ t.id }}" class="mt-2">
+                  <input type="hidden" name="method" value="delete">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center text-muted py-4">
+          <div class="fs-1">💰</div>
+          <p class="mb-0">Aucune dépense enregistrée. Ajoutez votre première dépense !</p>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+</div>
+
+<!-- Modal Nouvelle Dépense -->
+<div class="modal fade" id="expenseModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Nouvelle dépense</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <form method="post" action="/transactions/">
+        <div class="modal-body">
+          <input type="hidden" name="is_expense" value="true">
+
+          <div class="mb-3">
+            <label for="expenseLabel" class="form-label">Nom de la dépense</label>
+            <input type="text" class="form-control" id="expenseLabel" name="label" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="expenseAmount" class="form-label">Montant (€)</label>
+            <input type="number" class="form-control" id="expenseAmount" name="amount" step="0.01" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="expenseCategory" class="form-label">Catégorie</label>
+            <select class="form-select" id="expenseCategory" name="category_id">
+              <option value="">Sans catégorie</option>
+              {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="expenseDate" class="form-label">Date</label>
+            <input type="date" class="form-control" id="expenseDate" name="date" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const dateInput = document.getElementById('expenseDate');
+  if (dateInput && !dateInput.value) {
+    const today = new Date().toISOString().slice(0, 10);
+    dateInput.value = today;
+  }
+</script>
+
+</body>
 </html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion des Catégories</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f0f2f5; }
+        .card { margin-bottom: 1rem; }
+        .category-header { display: flex; justify-content: space-between; align-items: center; }
+        .btn-sm { padding: 0.25rem 0.5rem; }
+    </style>
+</head>
+<body>
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Catégories</h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">Ajouter une catégorie</button>
+    </div>
+
+    {% for c in categories %}
+    <div class="card">
+        <div class="card-body">
+            <div class="category-header">
+                <h5>{{ c.name }} <span class="badge bg-secondary">{{ c.type }}</span></h5>
+                <div>
+
+                    <!-- Ici c'est rouge parce qu'il a un soucis avec les quotes mais ça n'impacte pas le front ni le fait de modifier ; donc ne pas s'inquiéter -->
+                <button class="btn btn-warning btn-sm"
+                        onclick="editCategory({{ c.id }}, '{{ c.name|e }}')">
+                    Modifier
+                </button>
+
+                <button class="btn btn-danger btn-sm" onclick="deleteCategory({{ c.id }})">Supprimer</button>
+                </div>
+            </div>
+
+            {% if c.subcategories %}
+                <h6 class="mt-2">Sous-catégories :</h6>
+                <ul>
+                    {% for sub in c.subcategories %}
+                        <li>
+                            <strong>{{ sub.name }}</strong>
+                            {% if sub.transactions %}
+                                <ul>
+                                    {% for t in sub.transactions %}
+                                        <li>{{ t.label }} — {{ t.amount }} € ({{ t.date.strftime("%Y-%m-%d") }})</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <em>Aucune transaction</em>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% if c.transactions %}
+                <h6 class="mt-2">Transactions directes :</h6>
+                <ul>
+                    {% for t in c.transactions %}
+                        <li>{{ t.label }} — {{ t.amount }} € ({{ t.date.strftime("%Y-%m-%d") }})</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Ajouter Catégorie -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Nouvelle Catégorie</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <form id="categoryForm">
+          <div class="mb-3">
+            <label for="categoryName" class="form-label">Nom</label>
+            <input type="text" class="form-control" id="categoryName" required>
+          </div>
+          <div class="mb-3">
+            <label for="categoryType" class="form-label">Type</label>
+            <select class="form-select" id="categoryType" required>
+              <option value="revenu">Revenu</option>
+              <option value="depense">Dépense</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button class="btn btn-primary" onclick="saveCategory()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS pour ajouter / supprimer / modifier -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function saveCategory() {
+    const name = document.getElementById('categoryName').value;
+    const type = document.getElementById('categoryType').value;
+
+    if(!name || !type) return alert("Remplissez tous les champs");
+
+    fetch("/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, type })
+    }).then(res => {
+        if(res.ok) location.reload();
+        else alert("Erreur lors de la création");
+    });
+}
+
+function deleteCategory(id) {
+    if(!confirm("Voulez-vous vraiment supprimer cette catégorie ?")) return;
+
+    fetch(`/categories/${id}`, { method: "DELETE" }).then(res => {
+        if(res.ok) location.reload();
+        else alert("Erreur lors de la suppression");
+    });
+}
+
+function editCategory(id, name) {
+    const newName = prompt("Modifier le nom de la catégorie :", name);
+    if(!newName) return;
+
+    fetch(`/categories/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName })
+    }).then(res => {
+        if(res.ok) location.reload();
+        else alert("Erreur lors de la modification");
+    });
+}
+</script>
+</body>
+</html>
