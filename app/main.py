@@ -55,3 +55,8 @@ def get_total_balance(db: Session = Depends(get_db)):
 def get_recent_transactions_api(db: Session = Depends(get_db)):
     recent_transactions = services_transactions.get_recent_transactions(db)
     return recent_transactions
+
+@app.get("/api/recent-transactions")
+def get_recent_transactions_api(db: Session = Depends(get_db)):
+    recent_transactions = services_transactions.get_recent_transactions(db)
+    return recent_transactions
