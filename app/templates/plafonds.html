@@ -20,6 +20,7 @@
        <div class="inline-flex items-center gap-3">
          <div class="relative">
             <select id="month-select" class="rounded-full border border-slate-700 bg-slate-800/80 text-slate-100 text-xs font-medium pl-3 pr-8 py-1 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 appearance-none cursor-pointer">
+              <option value="loading">Chargement des mois...</option>
               </select>
             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
                 <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -27,7 +28,7 @@
                 </svg>
             </div>
          </div>
-         <div id="current-month-indicator" class="inline-flex items-center gap-2 bg-slate-700/70 rounded-full px-3 py-1"><span class="inline-flex h-2 w-2 rounded-full bg-emerald-400"></span> <span class="text-xs text-slate-100 font-medium">Mois en cours</span>
+         <div id="current-month-indicator" class="inline-flex items-center gap-2 bg-slate-700/70 rounded-full px-3 py-1 hidden"><span class="inline-flex h-2 w-2 rounded-full bg-emerald-400"></span> <span class="text-xs text-slate-100 font-medium">Mois en cours</span>
          </div>
        </div>
        </div>
@@ -293,43 +294,38 @@
       });
     }
 
-    // --------- LOGIQUE DE GESTION DES DÉPENSES ---------
+    // --------- LOGIQUE DE GESTION DES DÉPENSES (API-DRIVEN) ---------
     
-    // NOUVEAU: Données organisées par mois
-    const monthlyData = {
-        "2025-12": { // Mois courant (simulé)
-            nom: "Décembre 2025",
-            categories: [
-                { id: "logement", nom: "Logement", plafond: 1200, depense: 750 },
-                { id: "courses", nom: "Courses", plafond: 400, depense: 410 },
-                { id: "transport", nom: "Transport", plafond: 150, depense: 120 },
-                { id: "loisirs", nom: "Loisirs", plafond: 200, depense: 50 }
-            ]
-        },
-        "2025-11": {
-            nom: "Novembre 2025",
-            categories: [
-                { id: "logement", nom: "Logement", plafond: 1200, depense: 1200 },
-                { id: "courses", nom: "Courses", plafond: 400, depense: 350 },
-                { id: "transport", nom: "Transport", plafond: 150, depense: 160 },
-                { id: "loisirs", nom: "Loisirs", plafond: 200, depense: 180 }
-            ]
-        },
-        "2025-10": {
-            nom: "Octobre 2025",
-            categories: [
-                { id: "logement", nom: "Logement", plafond: 1100, depense: 1100 },
-                { id: "courses", nom: "Courses", plafond: 300, depense: 280 },
-                { id: "transport", nom: "Transport", plafond: 150, depense: 100 },
-                { id: "loisirs", nom: "Loisirs", plafond: 250, depense: 30 }
-            ]
+    // VARIABLES GLOBALES (Initialisation vide)
+    let globalMonthlyData = {}; // contiendra les données de tous les mois chargées
+    let selectedMonthKey = null; // ID du mois sélectionné (ex: "2025-12")
+    let selectedCategoryId = null; // ID de la catégorie sélectionnée
+    let searchedCategoryId = null; // ID de la catégorie recherchée
+
+    // --- UTILS API ---
+    const API_BASE_URL = "http://127.0.0.1:8000/api";
+    // NOTE: On simule le mois courant comme étant le mois le plus récent retourné par l'API
+    let currentMonthKey = null; 
+
+    /**
+     * Effectue un appel GET à l'API.
+     * @param {string} endpoint L'endpoint relatif (ex: /data/2025-12)
+     * @returns {Promise<any>}
+     */
+    async function apiFetch(endpoint) {
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `Erreur HTTP ${response.status} sur ${endpoint}`);
+            }
+            return response.json();
+        } catch (error) {
+            console.error("Erreur API:", error);
+            showMessage(`Erreur de connexion ou API: ${error.message}`, "error");
+            return null;
         }
-    };
-    
-    const currentMonthKey = "2025-12"; 
-    let selectedMonthKey = currentMonthKey;
-    let selectedCategoryId = monthlyData[selectedMonthKey].categories[0].id;
-    let searchedCategoryId = monthlyData[selectedMonthKey].categories[0].id;
+    }
 
     // Éléments DOM
     const categorySelect = document.getElementById("category-select");
@@ -344,7 +340,8 @@
     const currentMonthIndicator = document.getElementById("current-month-indicator");
 
     function getActiveCategories() {
-        return monthlyData[selectedMonthKey].categories;
+        if (!selectedMonthKey || !globalMonthlyData[selectedMonthKey]) return [];
+        return globalMonthlyData[selectedMonthKey].categories;
     }
 
     function showMessage(text, type) {
@@ -376,7 +373,55 @@
       return categories.find(function (c) { return c.id === searchedCategoryId; }) || categories[0];
     }
     
-    // NOUVEAU: Mettre à jour les données affichées après un changement de mois
+    /**
+     * Charge les données pour un mois donné (ou le mois par défaut si non spécifié) depuis l'API.
+     * @param {string} monthKey L'ID du mois (ex: "2025-12").
+     */
+    async function loadMonthData(monthKey) {
+        if (!monthKey) {
+            // Dans un vrai scénario API, il faudrait une route pour lister les mois.
+            // Pour l'instant, nous chargeons un mois par défaut connu de l'API mockée.
+            monthKey = currentMonthKey || "2025-12"; 
+        }
+
+        const data = await apiFetch(`/data/${monthKey}`);
+        
+        if (data) {
+            // Simuler la découverte des mois disponibles et du mois courant
+            // Dans ce scénario simplifié, nous simulons que 2025-12 est le seul mois connu initialement.
+            if (Object.keys(globalMonthlyData).length === 0) {
+                 // Si c'est le premier chargement, utilisez l'ID de ce mois comme mois courant initial
+                 currentMonthKey = monthKey; 
+                 // Pour la simulation, chargeons aussi d'autres mois si notre mock en a:
+                 // Dans un vrai scénario, on aurait besoin d'un endpoint /api/mois pour la liste.
+                 
+                 // Puisque nous ne pouvons pas lister les mois facilement ici,
+                 // on se concentre sur le mois sélectionné (celui qu'on vient de charger).
+                 globalMonthlyData[monthKey] = data;
+                 selectedMonthKey = monthKey;
+                 
+                 refreshMonthSelect([monthKey]); // On ne peut lister que ce qu'on connaît
+                 
+            } else {
+                globalMonthlyData[monthKey] = data;
+                selectedMonthKey = monthKey;
+            }
+            
+            // Tenter de sélectionner la première catégorie si aucune n'est sélectionnée
+            if (data.categories.length > 0) {
+                if (!selectedCategoryId || !data.categories.find(c => c.id === selectedCategoryId)) {
+                    selectedCategoryId = data.categories[0].id;
+                }
+                if (!searchedCategoryId || !data.categories.find(c => c.id === searchedCategoryId)) {
+                    searchedCategoryId = data.categories[0].id;
+                }
+            }
+
+            updateAllViews();
+        }
+    }
+
+
     function updateAllViews() {
         const isCurrentMonth = selectedMonthKey === currentMonthKey;
         
@@ -386,13 +431,13 @@
         }
         
         // Bloquer la modification du plafond si ce n'est pas le mois en cours
-        if (limitInput) limitInput.disabled = !isCurrentMonth;
+        const isEditable = isCurrentMonth && selectedMonthKey !== null;
+        if (limitInput) limitInput.disabled = !isEditable;
         const saveBtn = document.getElementById("save-limit-btn");
-        if (saveBtn) saveBtn.disabled = !isCurrentMonth;
+        if (saveBtn) saveBtn.disabled = !isEditable;
         
-        // Afficher un message d'information si le mois est historique
-        if (!isCurrentMonth) {
-            showMessage(`Affichage des données pour ${monthlyData[selectedMonthKey].nom}. La modification des plafonds est désactivée.`, "info");
+        if (!isCurrentMonth && selectedMonthKey) {
+            showMessage(`Affichage des données pour ${globalMonthlyData[selectedMonthKey].nom}. La modification des plafonds est désactivée.`, "info");
         } else {
              messageBox.classList.add("hidden");
         }
@@ -405,21 +450,23 @@
         redrawChart();
     }
     
-    // NOUVEAU: Remplir le sélecteur de mois
-    function refreshMonthSelect() {
+    /**
+     * Remplir le sélecteur de mois.
+     * NOTE: Cette fonction devrait idéalement être alimentée par un endpoint /api/months listant tous les IDs.
+     * Pour l'instant, elle liste les mois connus dans globalMonthlyData.
+     */
+    function refreshMonthSelect(monthKeys = Object.keys(globalMonthlyData)) {
         if (!monthSelect) return;
         monthSelect.innerHTML = "";
         
-        Object.keys(monthlyData).reverse().forEach(function(key) {
+        // Tri inverse (du plus récent au plus ancien)
+        monthKeys.sort().reverse().forEach(function(key) {
             const opt = document.createElement("option");
             opt.value = key;
-            opt.textContent = monthlyData[key].nom;
+            opt.textContent = globalMonthlyData[key].nom || key;
             if (key === selectedMonthKey) opt.selected = true;
             monthSelect.appendChild(opt);
         });
-        
-        // Déclenchement de la vue initiale
-        updateAllViews();
     }
 
 
@@ -449,12 +496,17 @@
 
     function updateLimitInput() {
       const cat = getSelectedCategory();
-      if (limitInput) limitInput.value = (cat.plafond || 0).toString();
+      if (limitInput && cat) limitInput.value = (cat.plafond || 0).toString();
     }
 
     function updateSearchDisplay() {
       const cat = getSearchedCategory();
-      if (!searchDepenseTotal || !searchPlafond || !searchStatus) return;
+      if (!searchDepenseTotal || !searchPlafond || !searchStatus || !cat) {
+           searchDepenseTotal.textContent = "N/A";
+           searchPlafond.textContent = "N/A";
+           searchStatus.textContent = "Aucune donnée de catégorie sélectionnée.";
+           return;
+      }
       
       const depense = cat.depense || 0;
       const plafond = cat.plafond || 0;
@@ -477,6 +529,131 @@
       }
     }
 
+    // --- LOGIQUE DE MISE À JOUR (PUT) ---
+    async function handleLimitFormSubmit(event) {
+        event.preventDefault();
+
+        if (!selectedMonthKey || !selectedCategoryId || limitInput.disabled) {
+            showMessage("Impossible d'enregistrer. Sélectionnez un mois et une catégorie modifiables.", "error");
+            return;
+        }
+
+        const nouveauPlafond = parseFloat(limitInput.value);
+        if (isNaN(nouveauPlafond) || nouveauPlafond < 0) {
+            showMessage("Veuillez entrer un plafond valide (numérique positif).", "error");
+            return;
+        }
+        
+        const currentCategory = getSelectedCategory();
+
+        const endpoint = `/plafond/${selectedMonthKey}/${selectedCategoryId}`;
+
+        try {
+            // 1. Appel PUT pour MODIFIER le plafond
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plafond: nouveauPlafond })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                showMessage(result.detail || "Échec de la mise à jour du plafond.", "error");
+                return;
+            }
+            
+            showMessage(result.message || "Plafond enregistré avec succès!", "success");
+            
+            // 2. Appel GET pour RECHARGER L'ÉTAT MIS À JOUR (Re-fetching)
+            // Ceci assure que la page reflète la modification.
+            await loadMonthData(selectedMonthKey); 
+
+        } catch (error) {
+            console.error("Erreur lors de la mise à jour:", error);
+            showMessage(`Erreur de connexion ou API: ${error.message}`, "error");
+        }
+    }
+
+    // --------- GESTION DES ÉVÉNEMENTS ---------
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // 1. Démarrer le chargement des données
+        // Charge le mois par défaut (ex: 2025-12)
+        loadMonthData(currentMonthKey || "2025-12"); 
+
+        // 2. Gestion du changement de mois
+        if (monthSelect) {
+            monthSelect.addEventListener("change", function () {
+                const newMonthKey = this.value;
+                if (!globalMonthlyData[newMonthKey]) {
+                    // Si le mois n'est pas encore chargé (hypothétique si on avait une liste complète)
+                    loadMonthData(newMonthKey); 
+                } else {
+                    selectedMonthKey = newMonthKey;
+                    // Réinitialiser la catégorie sélectionnée au premier élément du nouveau mois
+                    const categories = getActiveCategories();
+                    if (categories.length > 0) {
+                        selectedCategoryId = categories[0].id;
+                        searchedCategoryId = categories[0].id;
+                    }
+                    updateAllViews();
+                }
+            });
+        }
+        
+        // 3. Gestion du changement de catégorie (formulaire de plafond)
+        if (categorySelect) {
+            categorySelect.addEventListener("change", function () {
+                selectedCategoryId = this.value;
+                updateLimitInput(); // Met à jour l'input avec la valeur de la catégorie sélectionnée
+            });
+        }
+        
+        // 4. Gestion du formulaire de plafond (bouton "Enregistrer")
+        if (limitForm) {
+            limitForm.addEventListener("submit", handleLimitFormSubmit);
+        }
+
+        // 5. Gestion du changement de catégorie (recherche)
+        if (searchCategorySelect) {
+            searchCategorySelect.addEventListener("change", function () {
+                searchedCategoryId = this.value;
+                updateSearchDisplay(); // Met à jour l'affichage de la catégorie recherchée
+            });
+        }
+        
+        // 6. Gestion des onglets (même si les données sont maintenant dynamiques)
+        document.querySelectorAll(".tab-button").forEach(function (button) {
+            button.addEventListener("click", function () {
+                // Change les classes pour le style du bouton
+                document.querySelectorAll(".tab-button").forEach(b => {
+                    b.classList.remove("border-orange-500", "text-white");
+                    b.classList.add("border-transparent", "text-slate-400", "hover:text-slate-200", "hover:border-slate-500");
+                });
+                this.classList.remove("border-transparent", "text-slate-400", "hover:text-slate-200", "hover:border-slate-500");
+                this.classList.add("border-orange-500", "text-white");
+
+                // Gère l'affichage du panneau
+                const targetId = this.getAttribute("data-target");
+                document.querySelectorAll(".chart-panel").forEach(panel => {
+                    panel.classList.add("hidden");
+                });
+                document.getElementById(targetId).classList.remove("hidden");
+                
+                // Redessine le graphique après le changement d'onglet
+                if (targetId === 'chart-depenses' || targetId === 'chart-utilisation') {
+                    redrawChart();
+                } else if (targetId === 'chart-recherche') {
+                    updateSearchDisplay();
+                }
+            });
+        });
+
+    });
+
+
+    // --------- FONCTIONS DE DESSIN DE GRAPHIQUES (SANS CHANGER LA LOGIQUE) ---------
     const categoryColors = [
       { bg: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", light: "#60a5fa", solid: "#3b82f6" },  // Bleu
       { bg: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)", light: "#a78bfa", solid: "#8b5cf6" },  // Violet
@@ -493,11 +670,14 @@ function drawVerticalChart() {
       const container = document.getElementById("vertical-chart");
       if (!container) return;
       
-      // Nettoyer et configurer le conteneur
       container.innerHTML = "";
       container.className = "w-full h-full flex gap-3 relative pl-10"; 
 
       const categories = getActiveCategories();
+      if (categories.length === 0) {
+           container.innerHTML = `<p class="text-slate-400 text-sm absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">Aucune catégorie pour ce mois.</p>`;
+           return;
+      }
 
       // Trouver la valeur maximale réelle
       const maxDepense = Math.max(...categories.map(function(c) { return c.depense || 0; }), 1);
@@ -544,7 +724,6 @@ function drawVerticalChart() {
 
       // --- 2. Création de la zone de graphique et des Barres ---
       const chartArea = document.createElement("div");
-      // Réduire encore un peu le gap pour compenser les barres plus larges
       chartArea.className = "h-full flex items-end justify-around gap-1 flex-1 relative pb-7"; 
       
       categories.forEach(function (cat, index) {
@@ -564,7 +743,6 @@ function drawVerticalChart() {
 
         // 1. Barre solide pour la Dépense
         const depenseBar = document.createElement("div");
-        // *** MODIFICATION ICI : Élargissement de la barre à w-12 ***
         depenseBar.className = "w-12 rounded-t-lg shadow-lg transition-all duration-500 z-10"; 
         depenseBar.style.height = depenseHeightPercent + "%";
         depenseBar.style.background = (depense > plafond && plafond > 0) ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" : colorScheme.bg; 
@@ -573,7 +751,7 @@ function drawVerticalChart() {
         // 2. Ligne en pointillés pour le Plafond
         if (plafond > 0) {
             const plafondLine = document.createElement("div");
-            // *** MODIFICATION ICI : Élargissement de la ligne de plafond à w-16 ***
+            // NOTE: w-16 pour que la ligne dépasse légèrement la barre w-12
             plafondLine.className = "absolute left-1/2 -translate-x-1/2 border-t-2 border-dashed w-16 z-20 transition-all duration-500";
             plafondLine.style.borderColor = colorScheme.light; 
             plafondLine.style.bottom = `calc(${plafondPositionPercent}% - 2px)`; 
@@ -620,6 +798,10 @@ function drawVerticalChart() {
       if (!container) return;
       container.innerHTML = "";
       const categories = getActiveCategories();
+      if (categories.length === 0) {
+           container.innerHTML = `<p class="text-slate-400 text-sm text-center">Aucune catégorie pour ce mois.</p>`;
+           return;
+      }
 
       categories.forEach(function (cat, index) {
         const plafond = cat.plafond || 0;
@@ -652,7 +834,7 @@ function drawVerticalChart() {
         // Utilisation du rouge pour le pourcentage si dépassement
         percentLabel.style.color = percentRaw > 100 ? "#f87171" : colorScheme.light; 
         // Afficher le pourcentage réel
-        percentLabel.textContent = Math.round(percentRaw) + "%" + (depassement > 0 ? " (DÉPASSÉ)" : "");
+        percentLabel.textContent = Math.round(percentRaw) + "%" + (depassement > 1 ? " (DÉPASSÉ)" : "");
 
         topRow.appendChild(label);
         topRow.appendChild(percentLabel);
@@ -679,127 +861,33 @@ function drawVerticalChart() {
         depenseSpan.className = "text-slate-400";
         depenseSpan.innerHTML = `Dépensé: <span class="font-bold" style="color: ${colorScheme.light}">${depense.toFixed(0)}€</span>`;
         
-        // Reste à dépenser / Dépassement
-        const resteStatusSpan = document.createElement("span");
-        resteStatusSpan.className = "text-slate-400";
-        if (depassement > 0) {
-             resteStatusSpan.innerHTML = `Dépassement: <span class="text-red-400 font-bold">${depassement.toFixed(0)}€</span>`;
+        // Reste / Dépassement
+        const statusSpan = document.createElement("span");
+        statusSpan.className = "text-slate-400";
+        
+        if (depassement > 1) {
+             statusSpan.innerHTML = `Dépassement: <span class="font-bold text-red-400">${depassement.toFixed(0)}€</span>`;
         } else {
-             resteStatusSpan.innerHTML = `Reste: <span class="text-emerald-400 font-bold">${resteADepenser.toFixed(0)}€</span>`;
+             statusSpan.innerHTML = `Reste: <span class="font-bold text-emerald-400">${resteADepenser.toFixed(0)}€</span>`;
         }
         
-        // Plafond (Total)
+        // Plafond total
         const plafondSpan = document.createElement("span");
         plafondSpan.className = "text-slate-400";
         plafondSpan.innerHTML = `Plafond: <span class="font-bold">${plafond.toFixed(0)}€</span>`;
 
+
         infoRow.appendChild(depenseSpan);
-        infoRow.appendChild(resteStatusSpan);
+        infoRow.appendChild(statusSpan);
         infoRow.appendChild(plafondSpan);
 
-        // --- Assemblage de la ligne complète ---
         row.appendChild(topRow);
         row.appendChild(barBg);
-        row.appendChild(infoRow); 
+        row.appendChild(infoRow);
         container.appendChild(row);
       });
     }
-    
-    function setupTabs() {
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const chartPanels = document.querySelectorAll('.chart-panel');
 
-        function activateTab(targetId) {
-            tabButtons.forEach(button => {
-                const isActive = button.getAttribute('data-target') === targetId;
-                button.classList.toggle('text-white', isActive);
-                button.classList.toggle('text-slate-400', !isActive);
-                button.classList.toggle('border-orange-500', isActive);
-                button.classList.toggle('border-transparent', !isActive);
-                button.classList.toggle('hover:border-slate-500', !isActive);
-                button.classList.toggle('hover:text-slate-200', !isActive);
-                
-                if (targetId === 'chart-recherche' && isActive) {
-                    updateSearchDisplay();
-                }
-            });
-
-            chartPanels.forEach(panel => {
-                const isActive = panel.id === targetId;
-                panel.classList.toggle('hidden', !isActive);
-            });
-        }
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const targetId = this.getAttribute('data-target');
-                activateTab(targetId);
-            });
-        });
-        
-        activateTab('chart-depenses');
-    }
-
-
-    document.addEventListener("DOMContentLoaded", function () {
-      
-      refreshMonthSelect(); // NOUVEAU: Initialiser le sélecteur de mois
-      setupTabs(); 
-
-      // NOUVEAU: Écouteur pour le changement de mois
-      if (monthSelect) {
-        monthSelect.addEventListener("change", function(e) {
-            selectedMonthKey = e.target.value;
-            // Réinitialiser la catégorie sélectionnée (pour éviter d'avoir une catégorie qui n'existe pas dans le nouveau mois, bien que peu probable ici)
-            selectedCategoryId = getActiveCategories()[0].id; 
-            searchedCategoryId = getActiveCategories()[0].id;
-            updateAllViews();
-        });
-      }
-
-      if (categorySelect) {
-        categorySelect.addEventListener("change", function (e) {
-          selectedCategoryId = e.target.value;
-          updateLimitInput();
-        });
-      }
-      
-      if (searchCategorySelect) {
-          searchCategorySelect.addEventListener("change", function(e) {
-              searchedCategoryId = e.target.value;
-              updateSearchDisplay();
-          });
-      }
-
-      if (limitForm) {
-        limitForm.addEventListener("submit", function (e) {
-          e.preventDefault();
-          
-          // Vérification supplémentaire si ce n'est pas le mois en cours
-          if (selectedMonthKey !== currentMonthKey) {
-             showMessage("La modification des plafonds est seulement permise pour le mois en cours.", "error");
-             return;
-          }
-          
-          const cat = getSelectedCategory();
-          const value = Number(limitInput.value);
-          if (isNaN(value) || value < 0) {
-            showMessage("Veuillez saisir un plafond valide (>= 0).", "error");
-            return;
-          }
-          cat.plafond = value;
-          
-          // Mise à jour de toutes les vues après modification
-          updateAllViews();
-          showMessage("Plafond mis à jour pour " + cat.nom + ".", "success");
-        });
-      }
-
-      // Appliquer config par défaut si SDK pas encore dispo
-      if (!window.elementSdk) {
-        applyConfigToUI(defaultConfig);
-      }
-    });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a853a6601363cc1',t:'MTc2NDc4NzYwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ </body>
 </html>
