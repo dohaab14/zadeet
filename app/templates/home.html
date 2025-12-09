@@ -3,212 +3,175 @@
 {% block title %}ZADEET - Tableau de Bord{% endblock %}
 
 {% block head_extras %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block content %}
-    <div id="demoAlert" class="alert alert-warning alert-dismissible fade show d-none" role="alert">
-        <strong>Mode Démo :</strong> Le serveur Python n'est pas détecté.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+<div id="demoAlert" class="alert alert-warning alert-dismissible fade show d-none" role="alert">
+    <strong>Mode Démo :</strong> Le serveur Python n'est pas détecté.
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
 
-    <header class="text-center mb-4">
-        <h1 class="fw-bold">Tableau de Bord</h1>
-        <p class="text-muted">Vue d'ensemble de vos finances</p>
-    </header>
+<header class="text-center mb-4">
+    <h1 class="fw-bold">Tableau de Bord</h1>
+    <p class="text-muted">Vue d'ensemble de vos finances</p>
+</header>
 
-    <section class="card shadow-sm mb-4 border-0">
-        <div class="card-body text-center py-4">
-            <div class="text-uppercase text-secondary fw-semibold small">Solde Actuel</div>
-            <div class="display-4 fw-bold" id="totalBalanceDisplay">
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span class="fs-4 text-muted">Chargement...</span>
-            </div>
-        </div>
-    </section>
-
-    <section class="card shadow-sm mb-4">
-        <div class="card-body">
-            <h5 class="card-title fw-bold mb-3">Accéder aux transactions</h5>
-
-            <form action="/transactions" method="get" class="row g-2 align-items-end">
-
-                <div class="col-md-5">
-                    <label class="form-label small text-muted">Période</label>
-                    <select class="form-select" name="month">
-                        <option value="" selected>Mois en cours</option>
-                        <option value="last_month">Mois dernier</option>
-                        <option value="last_3_months">3 derniers mois</option>
-                        <option value="all">Tout l'historique</option>
-                    </select>
-                </div>
-
-                <div class="col-md-5">
-                    <label class="form-label small text-muted">Catégorie</label>
-                    <select class="form-select" name="category_id">
-                        <option value="" selected>Toutes les catégories</option>
-                        {% for cat in categories %}
-                            <option value="{{ cat.id }}">{{ cat.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">
-                        Voir & Filtrer
-                    </button>
-                </div>
-            </form>
-        </div>
-    </section>
-
-    <div class="row mb-4">
-        <div class="col-lg-6 mb-3 mb-lg-0">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-white fw-bold">Revenus vs Dépenses (3 mois)</div>
-                <div class="card-body">
-                    <canvas id="barChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-6">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-white fw-bold">Répartition ce mois (Parents)</div>
-                <div class="card-body">
-                    <canvas id="pieChart"></canvas>
-                </div>
-            </div>
+<section class="card shadow-sm mb-4 border-0">
+    <div class="card-body text-center py-4">
+        <div class="text-uppercase text-secondary fw-semibold small">Solde Actuel</div>
+        <div class="display-4 fw-bold" id="totalBalanceDisplay">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span class="fs-4 text-muted">Chargement...</span>
         </div>
     </div>
+</section>
 
-    <section class="card shadow-sm mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold">Dernières Transactions</h5>
-            <small class="text-muted">Aperçu rapide</small>
-        </div>
+<section class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title fw-bold mb-3">Accéder aux transactions</h5>
+        <form action="/transactions/page" method="get" class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small text-muted">Période</label>
+                <select class="form-select" name="month">
+                    <option value="" selected>Mois en cours</option>
+                    <option value="last_month">Mois dernier</option>
+                    <option value="last_3_months">3 derniers mois</option>
+                    <option value="all">Tout l'historique</option>
+                </select>
+            </div>
 
-        <div class="card-body p-0">
-            {% if recent_transactions %}
-                <div class="list-group list-group-flush">
-                    {% for t in recent_transactions %}
-                        <div class="list-group-item">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="fw-bold">{{ t.label or 'Transaction' }}</div>
-                                    <div class="small text-muted">
-                                        {{ t.date.strftime('%d/%m/%Y') }}
-                                        {% if t.category %}
-                                            • {{ t.category.name }}
-                                        {% endif %}
-                                    </div>
-                                </div>
-
-                                <div class="fw-bold {% if t.category.type == 'revenu' %}text-success{% else %}text-danger{% endif %}">
-                                    {% if t.category.type == 'revenu' %}+{% else %}-{% endif %}
-                                    {{ '%.2f' | format(t.amount) }} €
-                                </div>
-                            </div>
-                        </div>
+            <div class="col-md-5">
+                <label class="form-label small text-muted">Catégorie</label>
+                <select class="form-select" name="category_id">
+                    <option value="" selected>Toutes les catégories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
                     {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Voir & Filtrer</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div class="row mb-4">
+    <div class="col-lg-6 mb-3 mb-lg-0">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">Revenus vs Dépenses (3 mois)</div>
+            <div class="card-body">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">Répartition ce mois (Parents)</div>
+            <div class="card-body">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="card shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold">Dernières Transactions</h5>
+        <small class="text-muted">Aperçu rapide</small>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_transactions %}
+        <div class="list-group list-group-flush">
+            {% for t in recent_transactions %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fw-bold">{{ t.label }}</div>
+                    <div class="small text-muted">
+                        {{ t.date.strftime('%d/%m/%Y') }}
+                        {% if t.category %}
+                        • {{ t.category.name }}
+                        {% endif %}
+                    </div>
                 </div>
-            {% else %}
-                <div class="p-4 text-center text-muted">
-                    Aucune transaction récente (ou mode démo actif).
+                <div class="fw-bold {% if t.category.type == 'revenu' %}text-success{% else %}text-danger{% endif %}">
+                    {% if t.category.type == 'revenu' %}+{% else %}-{% endif %}
+                    {{ '%.2f' | format(t.amount) }} €
                 </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-4 text-center text-muted">Aucune transaction récente.</div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="card shadow-sm mb-4">
+    <div class="card-header fw-bold">Catégories et Transactions</div>
+    <div class="card-body">
+        {% for c in categories %}
+        <div class="mb-3">
+            <strong>{{ c.name }}</strong> <span class="badge bg-secondary">{{ c.type }}</span>
+            {% if c.transactions %}
+            <ul class="ps-3 mt-1">
+                {% for t in c.transactions %}
+                <li>{{ t.label }} — <span class="text-success">{{ t.amount }} €</span> ({{ t.date.strftime('%Y-%m-%d') }})</li>
+                {% endfor %}
+            </ul>
             {% endif %}
         </div>
-    </section>
+        {% endfor %}
+    </div>
+</section>
 {% endblock %}
 
 {% block body_scripts %}
 <script>
-    function showDemoMode() {
-        document.getElementById('demoAlert').classList.remove('d-none');
+async function loadBalance() {
+    const display = document.getElementById('totalBalanceDisplay');
+    try {
+        const response = await fetch('/api/total-balance');
+        const data = await response.json();
+        const solde = data.total_balance;
+        display.innerText = solde.toFixed(2) + " €";
+        display.classList.add(solde >=0 ? 'text-success' : 'text-danger');
+    } catch(err) {
+        display.innerHTML = "1 250.00 € <small class='fs-6 text-muted'>(Démo)</small>";
+        display.classList.add('text-success');
     }
+}
 
-    async function loadBalance() {
-        const display = document.getElementById('totalBalanceDisplay');
-        try {
-            const response = await fetch('/api/total-balance');
-            if (!response.ok) throw new Error("Erreur réseau");
-
-            const data = await response.json();
-            const solde = data.total_balance;
-
-            display.innerText = solde.toFixed(2) + " €";
-
-            if (solde >= 0) {
-                display.classList.add('text-success');
-                display.classList.remove('text-danger');
-            } else {
-                display.classList.add('text-danger');
-                display.classList.remove('text-success');
-            }
-
-        } catch (err) {
-            console.warn("API non accessible, mode démo", err);
-            showDemoMode();
-            display.innerHTML = "1 250.00 € <small class='fs-6 text-muted'>(Démo)</small>";
-            display.classList.add('text-success');
-        }
-    }
-
-    async function loadCharts() {
-        let barData, pieData;
-
-        try {
-            const response = await fetch('/api/dashboard-charts');
-            if (!response.ok) throw new Error("Erreur réseau");
-
-            const data = await response.json();
-            barData = data.bar_chart;
-            pieData = data.pie_chart;
-        } catch (err) {
-            console.warn("Erreur API charts, affichage démo", err);
-            barData = { labels: ['Oct', 'Nov', 'Déc'], revenus: [3000, 3500, 3200], depenses: [1500, 2100, 1800] };
-            pieData = { labels: ['Nourriture', 'Transport', 'Loisirs'], data: [400, 250, 150], tooltips: ['40%', '25%', '15%'] };
-        }
+async function loadCharts() {
+    try {
+        const response = await fetch('/api/dashboard-charts');
+        const data = await response.json();
 
         new Chart(document.getElementById('barChart'), {
             type: 'bar',
             data: {
-                labels: barData.labels,
+                labels: data.bar_chart.labels,
                 datasets: [
-                    { label: 'Revenus', data: barData.revenus, backgroundColor: '#0d6efd' },
-                    { label: 'Dépenses', data: barData.depenses, backgroundColor: '#dc3545' }
+                    { label: 'Revenus', data: data.bar_chart.revenus, backgroundColor: '#0d6efd' },
+                    { label: 'Dépenses', data: data.bar_chart.depenses, backgroundColor: '#dc3545' }
                 ]
-            },
-            options: { responsive: true }
+            }
         });
 
         new Chart(document.getElementById('pieChart'), {
             type: 'doughnut',
             data: {
-                labels: pieData.labels,
-                datasets: [{
-                    data: pieData.data,
-                    backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const index = context.dataIndex;
-                                const details = (pieData.tooltips && pieData.tooltips[index]) ? pieData.tooltips[index] : '';
-                                return context.label + ': ' + context.formattedValue + '€ (' + details + ')';
-                            }
-                        }
-                    }
-                }
+                labels: data.pie_chart.labels,
+                datasets: [{ data: data.pie_chart.data, backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#d63384'] }]
             }
         });
-    }
 
-    loadBalance();
-    loadCharts();
+    } catch(err) { console.warn("Charts en mode démo", err); }
+}
+
+loadBalance();
+loadCharts();
 </script>
 {% endblock %}
