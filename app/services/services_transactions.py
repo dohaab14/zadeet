@@ -9,7 +9,7 @@ from app.db.models import Transaction
 from app.db.schemas import TransactionCreate, TransactionUpdate
 from . import services_categories
 from sqlalchemy import func
-from app.db.models import Transaction as TransactionModel
+from app.db.models import Transaction as TransactionModel, Category
 
 
 def create_transaction(db: Session, data: TransactionCreate):
@@ -120,3 +120,25 @@ def get_transactions_overview(db: Session):
         "total_categories": total_categories,
         "total_expenses": total_expenses
     }
+
+# à sauter lors du merge mais jsp où c utilisé ?  @TODO: vérifier si utilisé quelque part
+
+def search_by_amount_and_category(db: Session, amount: float, category_name: str, tolerance: float = 0.01):
+    """
+    Recherche les transactions par montant et catégorie.
+    
+    Args:
+        db: Session SQLAlchemy
+        amount: Montant à rechercher
+        category_name: Nom de la catégorie
+        tolerance: Marge d'erreur sur le montant (par défaut 0.01€)
+    
+    Returns:
+        Liste des transactions correspondantes
+    """
+    return db.query(TransactionModel)\
+        .join(Category, TransactionModel.category_id == Category.id)\
+        .filter(TransactionModel.amount >= amount - tolerance)\
+        .filter(TransactionModel.amount <= amount + tolerance)\
+        .filter(Category.name == category_name)\
+        .all()

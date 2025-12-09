@@ -11,7 +11,7 @@ permet de ne pas exposer la bdd directement via l'API.
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, declarative_base
 from datetime import datetime
-#TODO: ajouter le modèle pour les plafonds
+# @TODO: ajouter le modèle pour les plafonds
 Base = declarative_base()
 
 class Category(Base):

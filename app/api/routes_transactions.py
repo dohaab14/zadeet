@@ -14,6 +14,9 @@ from app.db.schemas import (
 from app.services import services_transactions as transaction_service
 from app.services import services_categories as category_service
 from fastapi.templating import Jinja2Templates
+from datetime import date, timedelta
+from dateutil.relativedelta import relativedelta
+
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 templates = Jinja2Templates(directory="app/templates")
@@ -158,3 +161,51 @@ def get_recent_transactions_api(
         .limit(limit)
         .all()
     )
+
+
+# ajout du filtre par cartégoie et période ref au filtre de home.html
+
+@router.get("/filter")
+def filter_transactions(
+    category_id: int | None = None,
+    period: str | None = "current_month",
+    db: Session = Depends(get_db)
+):
+    from datetime import date, timedelta
+    from dateutil.relativedelta import relativedelta
+
+    query = db.query(TransactionModel).outerjoin(TransactionModel.category)
+    today = date.today()
+
+    # Filtre catégorie
+    if category_id:
+        query = query.filter(TransactionModel.category_id == category_id)
+
+    # Filtre période
+    if period == "current_month":
+        start = today.replace(day=1)
+        query = query.filter(TransactionModel.date >= start)
+    elif period == "last_month":
+        start = (today.replace(day=1) - relativedelta(months=1))
+        end = today.replace(day=1) - timedelta(days=1)
+        query = query.filter(TransactionModel.date.between(start, end))
+    elif period == "last_3_months":
+        start = today - relativedelta(months=3)
+        query = query.filter(TransactionModel.date >= start)
+    elif period == "all":
+        pass
+
+    results = query.order_by(TransactionModel.date.desc()).all()
+
+    # Générer un JSON sûr pour le JS
+    output = []
+    for t in results:
+        output.append({
+            "label": t.label,
+            "amount": t.amount,
+            "date": t.date.strftime("%Y-%m-%d"),
+            "category_name": t.category.name if t.category else "",
+            "category_type": t.category.type if t.category else "depense"
+        })
+    return output
+

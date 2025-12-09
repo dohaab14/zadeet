@@ -4,19 +4,18 @@
 
 {% block head_extras %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.transaction-list { padding-left: 1rem; margin-bottom: 0; }
+</style>
 {% endblock %}
 
 {% block content %}
-<div id="demoAlert" class="alert alert-warning alert-dismissible fade show d-none" role="alert">
-    <strong>Mode Démo :</strong> Le serveur Python n'est pas détecté.
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-
 <header class="text-center mb-4">
     <h1 class="fw-bold">Tableau de Bord</h1>
     <p class="text-muted">Vue d'ensemble de vos finances</p>
 </header>
 
+<!-- Solde actuel -->
 <section class="card shadow-sm mb-4 border-0">
     <div class="card-body text-center py-4">
         <div class="text-uppercase text-secondary fw-semibold small">Solde Actuel</div>
@@ -27,37 +26,37 @@
     </div>
 </section>
 
+<!-- Filtrage des transactions -->
 <section class="card shadow-sm mb-4">
     <div class="card-body">
-        <h5 class="card-title fw-bold mb-3">Accéder aux transactions</h5>
-        <form action="/transactions/page" method="get" class="row g-2 align-items-end">
-            <div class="col-md-5">
-                <label class="form-label small text-muted">Période</label>
-                <select class="form-select" name="month">
-                    <option value="" selected>Mois en cours</option>
+        <h5 class="card-title fw-bold mb-3">Filtrer les transactions</h5>
+        <div class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label for="filterPeriod" class="form-label small text-muted">Période</label>
+                <select id="filterPeriod" class="form-select">
+                    <option value="current_month" selected>Mois en cours</option>
                     <option value="last_month">Mois dernier</option>
                     <option value="last_3_months">3 derniers mois</option>
                     <option value="all">Tout l'historique</option>
                 </select>
             </div>
-
-            <div class="col-md-5">
-                <label class="form-label small text-muted">Catégorie</label>
-                <select class="form-select" name="category_id">
-                    <option value="" selected>Toutes les catégories</option>
+            <div class="col-md-6">
+                <label for="filterCategory" class="form-label small text-muted">Catégorie</label>
+                <select id="filterCategory" class="form-select">
+                    <option value="">Toutes les catégories</option>
                     {% for cat in categories %}
                     <option value="{{ cat.id }}">{{ cat.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Voir & Filtrer</button>
+            <div class="col-md-12 mt-2">
+                <button class="btn btn-primary w-100" onclick="applyFilters()">Voir & Filtrer</button>
             </div>
-        </form>
+        </div>
     </div>
 </section>
 
+<!-- Graphiques -->
 <div class="row mb-4">
     <div class="col-lg-6 mb-3 mb-lg-0">
         <div class="card shadow-sm h-100">
@@ -69,7 +68,7 @@
     </div>
     <div class="col-lg-6">
         <div class="card shadow-sm h-100">
-            <div class="card-header bg-white fw-bold">Répartition ce mois (Parents)</div>
+            <div class="card-header bg-white fw-bold">Répartition ce mois (Catégories)</div>
             <div class="card-body">
                 <canvas id="pieChart"></canvas>
             </div>
@@ -77,38 +76,38 @@
     </div>
 </div>
 
+<!-- Transactions récentes -->
 <section class="card shadow-sm mb-4">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-bold">Dernières Transactions</h5>
+        <h5 class="mb-0 fw-bold">Transactions</h5>
         <small class="text-muted">Aperçu rapide</small>
     </div>
     <div class="card-body p-0">
-        {% if recent_transactions %}
-        <div class="list-group list-group-flush">
-            {% for t in recent_transactions %}
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fw-bold">{{ t.label }}</div>
-                    <div class="small text-muted">
-                        {{ t.date.strftime('%d/%m/%Y') }}
-                        {% if t.category %}
-                        • {{ t.category.name }}
-                        {% endif %}
+        <div class="list-group list-group-flush" id="transactionList">
+            {% if recent_transactions %}
+                {% for t in recent_transactions %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold">{{ t.label }}</div>
+                        <div class="small text-muted">
+                            {{ t.date.strftime('%d/%m/%Y') }}
+                            {% if t.category %}• {{ t.category.name }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="fw-bold {% if t.category.type == 'revenu' %}text-success{% else %}text-danger{% endif %}">
+                        {% if t.category.type == 'revenu' %}+{% else %}-{% endif %}
+                        {{ '%.2f' | format(t.amount) }} €
                     </div>
                 </div>
-                <div class="fw-bold {% if t.category.type == 'revenu' %}text-success{% else %}text-danger{% endif %}">
-                    {% if t.category.type == 'revenu' %}+{% else %}-{% endif %}
-                    {{ '%.2f' | format(t.amount) }} €
-                </div>
-            </div>
-            {% endfor %}
+                {% endfor %}
+            {% else %}
+                <div class="p-4 text-center text-muted">Aucune transaction récente.</div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="p-4 text-center text-muted">Aucune transaction récente.</div>
-        {% endif %}
     </div>
 </section>
 
+<!-- Transactions par catégorie -->
 <section class="card shadow-sm mb-4">
     <div class="card-header fw-bold">Catégories et Transactions</div>
     <div class="card-body">
@@ -116,7 +115,7 @@
         <div class="mb-3">
             <strong>{{ c.name }}</strong> <span class="badge bg-secondary">{{ c.type }}</span>
             {% if c.transactions %}
-            <ul class="ps-3 mt-1">
+            <ul class="ps-3 mt-1 transaction-list">
                 {% for t in c.transactions %}
                 <li>{{ t.label }} — <span class="text-success">{{ t.amount }} €</span> ({{ t.date.strftime('%Y-%m-%d') }})</li>
                 {% endfor %}
@@ -129,26 +128,30 @@
 {% endblock %}
 
 {% block body_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 async function loadBalance() {
     const display = document.getElementById('totalBalanceDisplay');
     try {
-        const response = await fetch('/api/total-balance');
-        const data = await response.json();
-        const solde = data.total_balance;
-        display.innerText = solde.toFixed(2) + " €";
-        display.classList.add(solde >=0 ? 'text-success' : 'text-danger');
+        const res = await fetch('/api/total-balance');
+        const data = await res.json();
+        const solde = data.total_balance ?? 0;
+        display.innerText = solde.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + " €";
+        display.classList.remove('text-success','text-danger');
+        display.classList.add(solde >= 0 ? 'text-success' : 'text-danger');
     } catch(err) {
-        display.innerHTML = "1 250.00 € <small class='fs-6 text-muted'>(Démo)</small>";
+        display.innerHTML = "1 250,00 € <small class='fs-6 text-muted'>(Démo)</small>";
         display.classList.add('text-success');
+        console.warn("API solde non accessible", err);
     }
 }
 
 async function loadCharts() {
     try {
-        const response = await fetch('/api/dashboard-charts');
-        const data = await response.json();
+        const res = await fetch('/api/dashboard-charts');
+        const data = await res.json();
 
+        // Bar Chart
         new Chart(document.getElementById('barChart'), {
             type: 'bar',
             data: {
@@ -157,21 +160,83 @@ async function loadCharts() {
                     { label: 'Revenus', data: data.bar_chart.revenus, backgroundColor: '#0d6efd' },
                     { label: 'Dépenses', data: data.bar_chart.depenses, backgroundColor: '#dc3545' }
                 ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: true } },
+                scales: { y: { beginAtZero: true } }
             }
         });
 
+        // Pie Chart
         new Chart(document.getElementById('pieChart'), {
             type: 'doughnut',
             data: {
                 labels: data.pie_chart.labels,
-                datasets: [{ data: data.pie_chart.data, backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#d63384'] }]
+                datasets: [{ data: data.pie_chart.data, backgroundColor: ['#0d6efd','#6610f2','#6f42c1','#d63384','#198754'] }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let value = context.raw || 0;
+                                return context.label + ': ' + value.toLocaleString('fr-FR') + ' €';
+                            }
+                        }
+                    }
+                }
             }
         });
 
-    } catch(err) { console.warn("Charts en mode démo", err); }
+    } catch(err) {
+        console.warn("Erreur lors du chargement des graphiques", err);
+    }
 }
 
-loadBalance();
-loadCharts();
+// Filtrage des transactions
+async function applyFilters() {
+    const category_id = document.getElementById('filterCategory').value;
+    const period = document.getElementById('filterPeriod').value;
+    const params = new URLSearchParams();
+    if(category_id) params.append('category_id', category_id);
+    if(period) params.append('period', period);
+
+    const container = document.getElementById('transactionList');
+    container.innerHTML = `<div class="text-center p-4"><span class="spinner-border" role="status"></span> Chargement...</div>`;
+
+    try {
+        const res = await fetch('/transactions/filter?' + params.toString());
+        if(!res.ok) throw new Error("API non disponible");
+        const transactions = await res.json();
+
+        if(!transactions.length){
+            container.innerHTML = `<div class="p-4 text-center text-muted">Aucune transaction trouvée</div>`;
+            return;
+        }
+
+        container.innerHTML = transactions.map(t => `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fw-bold">${t.label}</div>
+                    <div class="small text-muted">${t.date} ${t.category_name ? '• ' + t.category_name : ''}</div>
+                </div>
+                <div class="fw-bold ${t.category_type === 'revenu' ? 'text-success' : 'text-danger'}">
+                    ${t.category_type === 'revenu' ? '+' : '-'}${t.amount.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2})} €
+                </div>
+            </div>
+        `).join('');
+
+    } catch(err){
+        container.innerHTML = `<div class="p-4 text-center text-danger">Erreur lors du filtrage</div>`;
+        console.error("Erreur filtrage transactions", err);
+    }
+}
+
+window.onload = function() {
+    loadBalance();
+    loadCharts();
+};
 </script>
 {% endblock %}
