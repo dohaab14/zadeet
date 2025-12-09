@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from fastapi.staticfiles import StaticFiles
 
 from app.api import routes_transactions, routes_categories
 from app.services import services_accueil, services_transactions
@@ -10,6 +11,7 @@ from app.db.database import SessionLocal
 templates = Jinja2Templates(directory="app/templates")
 app = FastAPI()
 
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(routes_transactions.router)
 app.include_router(routes_categories.router)
 
