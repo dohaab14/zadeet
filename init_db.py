@@ -1,26 +1,24 @@
 from app.db.database import engine, SessionLocal
 from app.db import models
 from datetime import datetime, timedelta
-import random
 
 # 1. CRÉATION DES TABLES
 print("Création de la base de données...")
-models.Base.metadata.drop_all(bind=engine) # On supprime tout pour repartir propre
-models.Base.metadata.create_all(bind=engine) # On recrée tout
+models.Base.metadata.drop_all(bind=engine)  # On supprime tout pour repartir propre
+models.Base.metadata.create_all(bind=engine)  # On recrée tout
 
 db = SessionLocal()
 
 print("Insertion des données de test...")
 
 # --- FONCTIONS UTILITAIRES POUR LES DATES DYNAMIQUES ---
-# Ces fonctions garantissent que les données sont toujours visibles, peu importe la date de ton PC
 def get_date_current_month(day=1):
     """Retourne une date du mois ACTUEL avec le jour demandé"""
     today = datetime.now()
     try:
         return today.replace(day=day)
     except ValueError:
-        return today.replace(day=28) # Sécurité pour février
+        return today.replace(day=28)  # Sécurité pour février
 
 def get_date_last_month(day=1):
     """Retourne une date du MOIS DERNIER"""
@@ -71,8 +69,7 @@ db.commit()
 # 2. CRÉATION DES TRANSACTIONS DYNAMIQUES
 transactions = []
 
-# --- CE MOIS-CI (Le dashboard les affichera en premier) ---
-# On utilise get_date_current_month() au lieu de dates fixes
+# --- CE MOIS-CI ---
 transactions.append(models.Transaction(amount=1500, label="Salaire", date=get_date_current_month(1), category_id=cat_salaire.id))
 transactions.append(models.Transaction(amount=800, label="Loyer", date=get_date_current_month(5), category_id=cat_loyer.id))
 transactions.append(models.Transaction(amount=50, label="Plein Essence", date=get_date_current_month(6), category_id=cat_essence.id))
@@ -90,7 +87,6 @@ transactions.append(models.Transaction(amount=1500, label="Salaire", date=get_da
 transactions.append(models.Transaction(amount=800, label="Loyer", date=get_date_two_months_ago(1), category_id=cat_loyer.id))
 
 db.add_all(transactions)
-
 db.commit()
 
 print("Base de données réinitialisée et remplie avec succès (Dates dynamiques) !")

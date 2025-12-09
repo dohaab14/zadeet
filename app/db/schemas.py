@@ -14,7 +14,7 @@ from typing import Optional, List
 
 class CategoryBase(BaseModel):
     name: str
-    type: str                      
+    type: str
     parent_id: Optional[int] = None
 
 
