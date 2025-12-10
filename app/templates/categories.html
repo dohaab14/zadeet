@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des Catégories{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Catégories</h1>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">Ajouter catégorie / sous-catégorie</button>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for c in categories %}
+    <div class="col">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <strong>{{ c.name }}</strong>
+                    <span class="badge bg-secondary ms-2">{{ c.type }}</span>
+                    <div class="ms-auto">
+                        <a href="#" class="btn btn-link btn-sm p-0 me-2" onclick="editCategory({{ c.id }}, '{{ c.name|e }}')">Modifier</a>
+                        <a href="#" class="btn btn-link btn-sm p-0 text-danger" onclick="deleteCategory({{ c.id }})">Supprimer</a>
+                    </div>
+                </div>
+
+                {% if c.transactions %}
+                <ul class="mb-2 ps-3">
+                    {% for t in c.transactions %}
+                    <li>{{ t.label }} — <span class="text-success">{{ t.amount }} €</span> ({{ t.date.strftime("%Y-%m-%d") }})</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                {% if c.subcategories %}
+                <ul class="list-group list-group-flush">
+                    {% for sub in c.subcategories %}
+                    <li class="list-group-item p-1 d-flex justify-content-between align-items-center">
+                        <span>{{ sub.name }}</span>
+                        <div>
+                            <a href="#" class="btn btn-link btn-sm p-0 me-2" onclick="editCategory({{ sub.id }}, '{{ sub.name|e }}')">Modifier</a>
+                            <a href="#" class="btn btn-link btn-sm p-0 text-danger" onclick="deleteCategory({{ sub.id }})">Supprimer</a>
+                        </div>
+                    </li>
+                    {% if sub.transactions %}
+                    <ul class="ps-4 mb-2">
+                        {% for t in sub.transactions %}
+                        <li>{{ t.label }} — <span class="text-success">{{ t.amount }} €</span> ({{ t.date.strftime("%Y-%m-%d") }})</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Nouvelle Catégorie / Sous-catégorie</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <form id="categoryForm" onsubmit="return saveCategory(event)">
+          <div class="mb-3">
+            <label for="categoryName" class="form-label">Nom</label>
+            <input type="text" class="form-control" id="categoryName" required>
+          </div>
+          <div class="mb-3">
+            <label for="categoryType" class="form-label">Type</label>
+            <select class="form-select" id="categoryType" required>
+              <option value="revenu">Revenu</option>
+              <option value="depense">Dépense</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="parentCategory" class="form-label">Parent (optionnel)</label>
+            <select class="form-select" id="parentCategory">
+              <option value="">-- Aucune --</option>
+              {% for c in categories %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="text-end">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function saveCategory(event) {
+    event.preventDefault();
+
+    const name = document.getElementById('categoryName').value;
+    const type = document.getElementById('categoryType').value;
+    const parent_id = document.getElementById('parentCategory').value || null;
+
+    if(!name || !type) return alert("Remplissez tous les champs");
+
+    try {
+        const res = await fetch("/categories/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, type, parent_id })
+        });
+
+        if(res.ok) location.reload();
+        else {
+            const data = await res.json();
+            alert("Erreur : " + (data.detail || "Impossible de créer la catégorie"));
+        }
+    } catch(err) {
+        alert("Erreur réseau : " + err);
+    }
+}
+
+function deleteCategory(id) {
+    if(!confirm("Voulez-vous vraiment supprimer cette catégorie ?")) return;
+
+    fetch(`/categories/${id}`, { method: "DELETE" })
+        .then(res => { if(res.ok) location.reload(); else alert("Erreur lors de la suppression"); });
+}
+
+function editCategory(id, name) {
+    const newName = prompt("Modifier le nom de la catégorie :", name);
+    if(!newName) return;
+
+    fetch(`/categories/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName })
+    })
+    .then(res => { if(res.ok) location.reload(); else alert("Erreur lors de la modification"); });
+}
+</script>
+{% endblock %}

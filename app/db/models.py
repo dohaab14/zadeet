@@ -1,3 +1,13 @@
+"""
+Ce fichier définit les modèles de base de données pour les catégories et les transactions
+dans une application de gestion de budget. Il utilise SQLAlchemy pour mapper les
+tables de la base de données aux classes Python.
+
+info: Ce fichier est différent du fichier schemas.py qui permet de mapper les données entrantes/sortantes et 
+permet de ne pas exposer la bdd directement via l'API.
+"""
+
+
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, declarative_base
 from datetime import datetime
@@ -15,6 +25,7 @@ class Category(Base):
     monthly_cap = Column(Float, default=0.0) 
     # ------------------------------------
     
+    # C'est ici que la magie opère : une catégorie peut avoir un parent
     parent_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     
     # Relations
@@ -29,6 +40,7 @@ class Transaction(Base):
     label = Column(String)
     date = Column(DateTime, default=datetime.utcnow)
     
+    # Lien vers la catégorie (on lie souvent à la sous-catégorie directement)
     category_id = Column(Integer, ForeignKey("categories.id"))
     
     category = relationship("Category", back_populates="transactions")

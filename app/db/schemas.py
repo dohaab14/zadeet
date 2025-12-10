@@ -1,10 +1,15 @@
+"""
+Ce fichier définit les schémas Pydantic utilisés pour valider les données
+entrantes (POST, PUT) et les données sortantes (réponses API).
+
+Les schémas permettent d’éviter d’exposer directement la structure de la base
+de données et d’assurer une validation automatique des données.
+"""
+
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional, List
 
-# ==========================================
-# 1. BASE SCHEMAS (STANDARD CRUD)
-# ==========================================
 
 class CategoryBase(BaseModel):
     name: str
@@ -16,6 +21,12 @@ class CategoryBase(BaseModel):
 
 class CategoryCreate(CategoryBase):
     """Schema for creating a new category."""
+
+
+class CategoryCreate(CategoryBase):
+    """
+    Schéma utilisé pour créer une nouvelle catégorie.
+    """
     pass
 
 
@@ -29,12 +40,28 @@ class CategoryUpdate(BaseModel):
 
 class Category(CategoryBase):
     """Standard API response schema."""
+    """
+    Schéma utilisé pour modifier une catégorie existante.
+    Tous les champs sont optionnels pour permettre des mises à jour partielles.
+    """
+    name: Optional[str] = None
+    type: Optional[str] = None
+    parent_id: Optional[int] = None
+
+
+class Category(CategoryBase):
+    """
+    Schéma renvoyé dans les réponses API.
+    Ajoute l'id et permet d’inclure les sous-catégories et transactions.
+    
+    """
     id: int
     subcategories: List["Category"] = [] 
     transactions: List["Transaction"] = []
 
     class Config:
         from_attributes = True
+        orm_mode = True
 
 
 class TransactionBase(BaseModel):
@@ -44,10 +71,21 @@ class TransactionBase(BaseModel):
 
 
 class TransactionCreate(TransactionBase):
+    category_id: int | None = None
+
+
+
+class TransactionCreate(TransactionBase):
+    """
+    Schéma utilisé pour créer une transaction.
+    """
     date: datetime 
 
 
 class TransactionUpdate(BaseModel):
+    """
+    Mise à jour partielle d'une transaction.
+    """
     label: Optional[str] = None
     amount: Optional[float] = None
     category_id: Optional[int] = None
@@ -55,6 +93,9 @@ class TransactionUpdate(BaseModel):
 
 
 class Transaction(TransactionBase):
+    """
+    Schéma renvoyé par l'API.
+    """
     id: int
     date: datetime
 
@@ -105,3 +146,4 @@ class MonthDataSchema(BaseModel):
 
 # Résolution des références circulaires pour Category
 Category.model_rebuild()
+        orm_mode = True
