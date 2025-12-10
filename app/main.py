@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import du router depuis ton dossier api/routes.py
-from app.api.routes_plafonds import router as api_router
+#from app.api.routes_plafonds import router as api_router
 
 # Initialisation
 app = FastAPI(
@@ -24,7 +24,7 @@ app.add_middleware(
 # --- INCLUSION DU ROUTER ---
 # On ajoute le préfixe "/api" ici. 
 # Donc les routes deviennent /api/data/... et /api/plafond/...
-app.include_router(api_router, prefix="/api")
+#app.include_router(api_router, prefix="/api")
 
 # Route racine pour tester
 @app.get("/")
