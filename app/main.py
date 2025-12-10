@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import du router depuis ton dossier api/routes.py
-from api.routes_plafonds import router as api_router
+from app.api.routes_plafonds import router as api_router
 
 # Initialisation
 app = FastAPI(
