@@ -48,7 +48,9 @@ def get_charts_data(db: Session = Depends(get_db)):
 @app.get("/api/total-balance")
 def get_total_balance(db: Session = Depends(get_db)):
     total_balance = services_accueil.get_total_balance(db)
-    return total_balance or 0.0
+    return {
+        "total_balance": total_balance or 0.0
+    }
 
 
 @app.get("/api/recent-transactions")
