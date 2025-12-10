@@ -1,4 +1,4 @@
-# ZADEET — Gestionnaire de Budget Étudiant
+# ZADEET — Gestionnaire de Budget 
 
 ## Présentation du projet
 
