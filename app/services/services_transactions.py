@@ -54,19 +54,27 @@ def get_transactions(
     search: str | None = None,
 ):
     """
-    Récupère les transactions, avec filtres optionnels :
-    - category_id : filtre par catégorie
-    - search      : filtre sur le label (contient, insensible à la casse)
+    Récupère les transactions avec filtrage intelligent :
+    - Si category_id est un Parent, récupère aussi les transactions des Enfants.
     """
-    query = db.query(TransactionModel)
+    # On fait une jointure explicite pour pouvoir filtrer sur le parent
+    query = db.query(Transaction).join(Category, Transaction.category_id == Category.id)
 
     if category_id is not None:
-        query = query.filter(TransactionModel.category_id == category_id)
+        # La magie est ici : On prend la transaction SI :
+        # 1. C'est exactement cette catégorie (ex: Je filtre sur 'Courses')
+        # 2. OU c'est un enfant de cette catégorie (ex: Je filtre sur 'Alimentation')
+        query = query.filter(
+            or_(
+                Transaction.category_id == category_id,
+                Category.parent_id == category_id
+            )
+        )
 
     if search:
         pattern = f"%{search}%"
         query = query.filter(
-            func.lower(TransactionModel.label).like(func.lower(pattern))
+            func.lower(Transaction.label).like(func.lower(pattern))
         )
 
     return query.all()

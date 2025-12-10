@@ -5,7 +5,7 @@ from sqlalchemy import extract, func
 from typing import List, Optional
 
 from app.db.database import SessionLocal
-from app.db.models import Transaction as TransactionModel
+from app.db.models import Transaction as TransactionModel, Category as CategoryModel
 from app.db.schemas import (
     Transaction as TransactionSchema,
     TransactionCreate,
@@ -178,12 +178,23 @@ def filter_transactions(
     period: str | None = "current_month",
     db: Session = Depends(get_db)
 ):
-    query = db.query(TransactionModel).outerjoin(TransactionModel.category)
-    today = date.today()
-
+    # 1. On utilise le service qui gère déjà le filtre Parent/Enfant !
+    # Mais comme on a besoin de filtrer par date en plus, on reconstruit la query ici pour combiner les deux.
+    
+    query = db.query(TransactionModel).join(CategoryModel)
+    
+    # Filtre Catégorie (Logique Parent OU Enfant)
     if category_id:
-        query = query.filter(TransactionModel.category_id == category_id)
+        from sqlalchemy import or_
+        query = query.filter(
+            or_(
+                TransactionModel.category_id == category_id,
+                CategoryModel.parent_id == category_id
+            )
+        )
 
+    # Filtre Période
+    today = date.today()
     if period == "current_month":
         start = today.replace(day=1)
         query = query.filter(TransactionModel.date >= start)
@@ -197,13 +208,28 @@ def filter_transactions(
 
     results = query.order_by(TransactionModel.date.desc()).all()
 
-    return [
-        {
+    # Construction du JSON pour le Frontend
+    output = []
+    for t in results:
+        # On détermine le nom du parent pour le regroupement global
+        parent_name = "Autre"
+        if t.category:
+            if t.category.parent:
+                parent_name = t.category.parent.name # C'est une sous-catégorie
+            else:
+                parent_name = t.category.name # C'est déjà une catégorie racine
+
+        output.append({
             "label": t.label,
             "amount": t.amount,
             "date": t.date.strftime("%Y-%m-%d"),
-            "category_name": t.category.name if t.category else "",
-            "category_type": t.category.type if t.category else "depense"
-        }
-        for t in results
-    ]
+            
+            # Info 1 : Le vrai nom (ex: "Restaurant")
+            "category_name": t.category.name if t.category else "Autre", 
+            
+            # Info 2 : Le groupe (ex: "Alimentation") -> C'est ça la clé du succès !
+            "parent_name": parent_name,
+            
+            "category_type": t.category.type if t.category else "depense",
+        })
+    return output
