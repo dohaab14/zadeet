@@ -128,8 +128,26 @@
 {% endblock %}
 
 {% block body_scripts %}
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    let barChartInstance;
+    let pieChartInstance;
+    function updateBarChart(labels, revenus, depenses) {
+        if(!barChartInstance) return;
+        barChartInstance.data.labels = labels;
+        barChartInstance.data.datasets[0].data = revenus;
+        barChartInstance.data.datasets[1].data = depenses;
+        barChartInstance.update();
+    }
+
+    function updatePieChart(labels, data) {
+        if(!pieChartInstance) return;
+        pieChartInstance.data.labels = labels;
+        pieChartInstance.data.datasets[0].data = data;
+        pieChartInstance.update();
+    }
+
 async function loadBalance() {
     const display = document.getElementById('totalBalanceDisplay');
     try {
@@ -152,7 +170,7 @@ async function loadCharts() {
         const data = await res.json();
 
         // Bar Chart
-        new Chart(document.getElementById('barChart'), {
+        barChartInstance = new Chart(document.getElementById('barChart'), {
             type: 'bar',
             data: {
                 labels: data.bar_chart.labels,
@@ -169,7 +187,7 @@ async function loadCharts() {
         });
 
         // Pie Chart
-        new Chart(document.getElementById('pieChart'), {
+        pieChartInstance = new Chart(document.getElementById('pieChart'), {
             type: 'doughnut',
             data: {
                 labels: data.pie_chart.labels,
@@ -189,6 +207,7 @@ async function loadCharts() {
                 }
             }
         });
+
 
     } catch(err) {
         console.warn("Erreur lors du chargement des graphiques", err);
@@ -216,6 +235,7 @@ async function applyFilters() {
             return;
         }
 
+        // Afficher la liste des transactions
         container.innerHTML = transactions.map(t => `
             <div class="list-group-item d-flex justify-content-between align-items-center">
                 <div>
@@ -227,6 +247,30 @@ async function applyFilters() {
                 </div>
             </div>
         `).join('');
+
+        // ---- Mettre à jour les graphiques ----
+
+        // Bar chart : Revenus vs Dépenses
+        let revenus = transactions.map(t => t.category_type === 'revenu' ? t.amount : 0);
+        let depenses = transactions.map(t => t.category_type === 'depense' ? t.amount : 0);
+        let labels = transactions.map(t => t.label);
+        updateBarChart(labels, revenus, depenses);
+
+        // Pie chart : Répartition par catégorie
+        let pieLabels = [];
+        let pieData = [];
+        let categoryMap = {};
+        transactions.forEach(t => {
+            let name = t.category_name || 'Autres';
+            if(!categoryMap[name]) categoryMap[name] = 0;
+            categoryMap[name] += t.amount;
+        });
+        for(let key in categoryMap){
+            pieLabels.push(key);
+            pieData.push(categoryMap[key]);
+        }
+        updatePieChart(pieLabels, pieData);
+
 
     } catch(err){
         container.innerHTML = `<div class="p-4 text-center text-danger">Erreur lors du filtrage</div>`;
