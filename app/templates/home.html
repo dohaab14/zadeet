@@ -49,8 +49,15 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-12 mt-2">
-                <button class="btn btn-primary w-100" onclick="applyFilters()">Voir & Filtrer</button>
+            <div class="col-md-12 mt-2 d-flex gap-2">
+                <button class="btn btn-primary flex-grow-1" onclick="applyFilters()">
+                    Voir & Filtrer
+                </button>
+                
+                <!-- Le bouton Réinitialiser recharge simplement la page ('/') -->
+                <button class="btn btn-outline-secondary" onclick="window.location.href='/'">
+                    Réinitialiser
+                </button>
             </div>
         </div>
     </div>
@@ -60,7 +67,7 @@
 <div class="row mb-4">
     <div class="col-lg-6 mb-3 mb-lg-0">
         <div class="card shadow-sm h-100">
-            <div class="card-header bg-white fw-bold">Revenus vs Dépenses (3 mois)</div>
+            <div class="card-header bg-white fw-bold">Revenus vs Dépenses</div>
             <div class="card-body">
                 <canvas id="barChart"></canvas>
             </div>
@@ -68,7 +75,7 @@
     </div>
     <div class="col-lg-6">
         <div class="card shadow-sm h-100">
-            <div class="card-header bg-white fw-bold">Répartition ce mois (Catégories)</div>
+            <div class="card-header bg-white fw-bold">Répartition (Catégories)</div>
             <div class="card-body">
                 <canvas id="pieChart"></canvas>
             </div>
@@ -200,8 +207,12 @@ async function loadCharts() {
                         callbacks: {
                             label: function(context) {
                                 let value = context.raw || 0;
-                                return context.label + ': ' + value.toLocaleString('fr-FR') + ' €';
-                            }
+                                let index = context.dataIndex;
+                                let details = "";
+                                if (data.pie_chart.tooltips && data.pie_chart.tooltips[index]) {
+                                    details = ` (${data.pie_chart.tooltips[index]})`;
+                                }
+                                return context.label + ': ' + value.toLocaleString('fr-FR') + ' €' + details;                            }
                         }
                     }
                 }
