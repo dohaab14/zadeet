@@ -41,8 +41,17 @@ def transactions_page(
 ):
     overview = transaction_service.get_transactions_overview(db)
 
-    # Injecte les catégories + transactions filtrées
-    overview["categories"] = category_service.get_categories(db)
+    # 1. Récupérer les totaux des montants par category_id
+    category_totals = transaction_service.get_total_amount_by_category(db)
+
+    # 2. Enrichir la liste des catégories avec l'attribut total_amount
+    categories_to_enrich = overview["categories"] 
+
+    for cat in categories_to_enrich:
+        # Ajout de l'attribut dynamique total_amount
+        cat.total_amount = category_totals.get(cat.id, 0.0) 
+
+    # 3. Assurez-vous que les transactions prennent en compte le filtre de recherche
     overview["transactions"] = transaction_service.get_transactions(db, search=search)
 
     return templates.TemplateResponse(
