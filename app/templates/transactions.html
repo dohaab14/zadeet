@@ -27,12 +27,42 @@
 </section>
 
 <section class="d-flex flex-column flex-md-row gap-2 mb-4">
-  <button class="btn btn-primary flex-fill" data-bs-toggle="modal" data-bs-target="#expenseModal">
-    Ajouter une dépense
-  </button>
-  <a href="/categories/page" class="btn btn-secondary flex-fill text-center">Gérer les catégories</a>
-</section>
-
+    <button
+      class="btn btn-primary flex-fill"
+      data-bs-toggle="modal"
+      data-bs-target="#expenseModal"
+      data-mode="create"
+    >
+      Ajouter une dépense
+    </button>
+    <a href="/categories/page" class="btn btn-secondary flex-fill text-center">Gérer les catégories</a>
+  </section>
+  
+  
+  <!-- 🔎 Formulaire de recherche -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get" action="/transactions/page" class="row g-2 align-items-end">
+        <div class="col-md-6">
+          <label for="searchInput" class="form-label small mb-1">Rechercher une dépense</label>
+          <input
+            type="text"
+            id="searchInput"
+            name="search"
+            class="form-control"
+            placeholder="Ex : Uber, Carrefour, Netflix..."
+            value="{{ search | default('') }}"
+          >
+        </div>
+        <div class="col-md-2 d-grid">
+          <button type="submit" class="btn btn-primary mt-3 mt-md-0">
+            Filtrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+  
 <section class="card shadow-sm mb-4">
   <div class="card-body">
     <h2 class="h5 mb-3">Dépenses par catégorie</h2>
@@ -101,12 +131,32 @@
               </div>
             </div>
             <div class="text-end ms-3">
-              <div class="fw-bold text-primary">{{ '%.2f' | format(t.amount) }} €</div>
-              <form method="post" action="/transactions/{{ t.id }}" class="mt-2">
-                <input type="hidden" name="method" value="delete">
-                <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
-              </form>
-            </div>
+                <div class="fw-bold text-primary">{{ '%.2f' | format(t.amount) }} €</div>
+              
+                <!-- Bouton modifier (ouvre le même modal) -->
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary me-2"
+                  data-bs-toggle="modal"
+                  data-bs-target="#expenseModal"
+                  data-mode="edit"
+                  data-id="{{ t.id }}"
+                  data-label="{{ t.label or '' }}"
+                  data-amount="{{ '%.2f' | format(t.amount) }}"
+                  data-category-id="{{ t.category.id if t.category else '' }}"
+                  data-date="{{ t.date.strftime('%Y-%m-%d') }}"
+                >
+                  Modifier
+                </button>
+              
+                <!--  Bouton supprimer -->
+                <form method="post" action="/transactions/{{ t.id }}" class="d-inline">
+                  <input type="hidden" name="method" value="delete">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
+                </form>
+              </div>
+              
+            
           </div>
         {% endfor %}
       </div>
@@ -167,10 +217,58 @@
 
 {% block body_scripts %}
   <script>
-    const dateInput = document.getElementById('expenseDate');
-    if (dateInput && !dateInput.value) {
-      const today = new Date().toISOString().slice(0, 10);
-      dateInput.value = today;
-    }
+    document.addEventListener('DOMContentLoaded', function () {
+      const expenseModal = document.getElementById('expenseModal');
+      const dateInput = document.getElementById('expenseDate');
+      const labelInput = document.getElementById('expenseLabel');
+      const amountInput = document.getElementById('expenseAmount');
+      const categorySelect = document.getElementById('expenseCategory');
+      const form = expenseModal.querySelector('form');
+      const title = expenseModal.querySelector('.modal-title');
+
+      function setTodayIfEmpty() {
+        if (dateInput && !dateInput.value) {
+          const today = new Date().toISOString().slice(0, 10);
+          dateInput.value = today;
+        }
+      }
+
+      setTodayIfEmpty();
+
+      expenseModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const mode = button.getAttribute('data-mode') || 'create';
+
+        if (mode === 'create') {
+          // Mode création
+          title.textContent = 'Nouvelle dépense';
+          form.action = '/transactions/';
+          labelInput.value = '';
+          amountInput.value = '';
+          categorySelect.value = '';
+          setTodayIfEmpty();
+        } else if (mode === 'edit') {
+          // Mode édition
+          const id = button.getAttribute('data-id');
+          const label = button.getAttribute('data-label') || '';
+          const amount = button.getAttribute('data-amount') || '';
+          const categoryId = button.getAttribute('data-category-id') || '';
+          const date = button.getAttribute('data-date') || '';
+
+          title.textContent = 'Modifier la dépense';
+          form.action = `/transactions/${id}/update`;
+
+          labelInput.value = label;
+          amountInput.value = amount;
+          categorySelect.value = categoryId;
+          if (date) {
+            dateInput.value = date;
+          } else {
+            setTodayIfEmpty();
+          }
+        }
+      });
+    });
   </script>
 {% endblock %}
+

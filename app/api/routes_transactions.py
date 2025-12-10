@@ -208,4 +208,26 @@ def filter_transactions(
             "category_type": t.category.type if t.category else "depense"
         })
     return output
+@router.post("/{transaction_id}/update")
+def update_transaction_from_form(
+    transaction_id: int,
+    label: str = Form(...),
+    amount: float = Form(...),
+    category_id: int | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    txn = transaction_service.get_transaction(db, transaction_id)
+    if not txn:
+        raise HTTPException(status_code=404, detail="Transaction non trouvée")
+
+    data = TransactionUpdate(
+        label=label,
+        amount=amount,
+        category_id=category_id,
+        # si TransactionUpdate a d'autres champs (date, etc.), on pourra les ajouter plus tard
+    )
+
+    transaction_service.update_transaction(db, txn, data)
+    return RedirectResponse(url="/transactions/page", status_code=303)
+
 
