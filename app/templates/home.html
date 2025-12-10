@@ -45,7 +45,9 @@
                 <select id="filterCategory" class="form-select">
                     <option value="">Toutes les catégories</option>
                     {% for cat in categories %}
-                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% if cat.parent_id is none %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endif %}
                     {% endfor %}
                 </select>
             </div>
