@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from typing import Dict, List
 # Importez vos schémas (assurez-vous que l'import est correct pour votre structure)
-from schemas import MoisDataSchema, PlafondUpdateSchema, CategorieSchema 
+from db.schemas import MoisDataSchema, PlafondUpdateSchema, CategorieSchema 
 
 router = APIRouter()
 
