@@ -44,13 +44,24 @@
                 <label for="filterCategory" class="form-label small text-muted">Catégorie</label>
                 <select id="filterCategory" class="form-select">
                     <option value="">Toutes les catégories</option>
+                    
+                    <!-- Affichage Hiérarchique -->
                     {% for cat in categories %}
-                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        <option value="{{ cat.id }}" class="fw-bold">{{ cat.name }}</option>
+                        {% for sub in cat.subcategories %}
+                            <option value="{{ sub.id }}">&nbsp;&nbsp;&nbsp;&nbsp;↳ {{ sub.name }}</option>
+                        {% endfor %}
                     {% endfor %}
+                    
                 </select>
             </div>
-            <div class="col-md-12 mt-2">
-                <button class="btn btn-primary w-100" onclick="applyFilters()">Voir & Filtrer</button>
+            <div class="col-md-12 mt-2 d-flex gap-2">
+                <button class="btn btn-primary flex-grow-1" onclick="applyFilters()">
+                    Voir & Filtrer
+                </button>
+                <button class="btn btn-outline-secondary" onclick="window.location.href='/'">
+                    Réinitialiser
+                </button>
             </div>
         </div>
     </div>
@@ -60,7 +71,7 @@
 <div class="row mb-4">
     <div class="col-lg-6 mb-3 mb-lg-0">
         <div class="card shadow-sm h-100">
-            <div class="card-header bg-white fw-bold">Revenus vs Dépenses (3 mois)</div>
+            <div class="card-header bg-white fw-bold">Revenus vs Dépenses</div>
             <div class="card-body">
                 <canvas id="barChart"></canvas>
             </div>
@@ -68,7 +79,7 @@
     </div>
     <div class="col-lg-6">
         <div class="card shadow-sm h-100">
-            <div class="card-header bg-white fw-bold">Répartition ce mois (Catégories)</div>
+            <div class="card-header bg-white fw-bold">Répartition (Dépenses)</div>
             <div class="card-body">
                 <canvas id="pieChart"></canvas>
             </div>
@@ -107,136 +118,196 @@
     </div>
 </section>
 
-<!-- Transactions par catégorie -->
-<section class="card shadow-sm mb-4">
-    <div class="card-header fw-bold">Catégories et Transactions</div>
-    <div class="card-body">
-        {% for c in categories %}
-        <div class="mb-3">
-            <strong>{{ c.name }}</strong> <span class="badge bg-secondary">{{ c.type }}</span>
-            {% if c.transactions %}
-            <ul class="ps-3 mt-1 transaction-list">
-                {% for t in c.transactions %}
-                <li>{{ t.label }} — <span class="text-success">{{ t.amount }} €</span> ({{ t.date.strftime('%Y-%m-%d') }})</li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-        </div>
-        {% endfor %}
-    </div>
-</section>
 {% endblock %}
 
 {% block body_scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-async function loadBalance() {
-    const display = document.getElementById('totalBalanceDisplay');
-    try {
-        const res = await fetch('/api/total-balance');
-        const data = await res.json();
-        const solde = data.total_balance ?? 0;
-        display.innerText = solde.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + " €";
-        display.classList.remove('text-success','text-danger');
-        display.classList.add(solde >= 0 ? 'text-success' : 'text-danger');
-    } catch(err) {
-        display.innerHTML = "1 250,00 € <small class='fs-6 text-muted'>(Démo)</small>";
-        display.classList.add('text-success');
-        console.warn("API solde non accessible", err);
+    let barChartInstance;
+    let pieChartInstance;
+
+    function updateBarChart(labels, revenus, depenses) {
+        if(!barChartInstance) return;
+        barChartInstance.data.labels = labels;
+        barChartInstance.data.datasets[0].data = revenus;
+        barChartInstance.data.datasets[1].data = depenses;
+        barChartInstance.update();
     }
-}
 
-async function loadCharts() {
-    try {
-        const res = await fetch('/api/dashboard-charts');
-        const data = await res.json();
+    function updatePieChart(labels, data, customTooltips) {
+        if(!pieChartInstance) return;
+        pieChartInstance.data.labels = labels;
+        pieChartInstance.data.datasets[0].data = data;
+        
+        // On écrase les tooltips
+        pieChartInstance.data.customTooltips = customTooltips;
+        
+        pieChartInstance.update();
+    }
 
-        // Bar Chart
-        new Chart(document.getElementById('barChart'), {
-            type: 'bar',
-            data: {
-                labels: data.bar_chart.labels,
-                datasets: [
-                    { label: 'Revenus', data: data.bar_chart.revenus, backgroundColor: '#0d6efd' },
-                    { label: 'Dépenses', data: data.bar_chart.depenses, backgroundColor: '#dc3545' }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: true } },
-                scales: { y: { beginAtZero: true } }
-            }
-        });
+    async function loadBalance() {
+        const display = document.getElementById('totalBalanceDisplay');
+        try {
+            const res = await fetch('/api/total-balance');
+            const data = await res.json();
+            const solde = data.total_balance ?? 0;
+            display.innerText = solde.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + " €";
+            display.classList.remove('text-success','text-danger');
+            display.classList.add(solde >= 0 ? 'text-success' : 'text-danger');
+        } catch(err) {
+            console.warn("API solde non accessible", err);
+        }
+    }
 
-        // Pie Chart
-        new Chart(document.getElementById('pieChart'), {
-            type: 'doughnut',
-            data: {
-                labels: data.pie_chart.labels,
-                datasets: [{ data: data.pie_chart.data, backgroundColor: ['#0d6efd','#6610f2','#6f42c1','#d63384','#198754'] }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let value = context.raw || 0;
-                                return context.label + ': ' + value.toLocaleString('fr-FR') + ' €';
+    async function loadCharts() {
+        try {
+            const res = await fetch('/api/dashboard-charts');
+            const data = await res.json();
+            const pieData = data.pie_chart; // Important pour l'init
+
+            // Bar Chart
+            barChartInstance = new Chart(document.getElementById('barChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.bar_chart.labels,
+                    datasets: [
+                        { label: 'Revenus', data: data.bar_chart.revenus, backgroundColor: '#198754' },
+                        { label: 'Dépenses', data: data.bar_chart.depenses, backgroundColor: '#dc3545' }
+                    ]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+
+            // Pie Chart
+            pieChartInstance = new Chart(document.getElementById('pieChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: pieData.labels,
+                    datasets: [{ data: pieData.data, backgroundColor: ['#0d6efd','#6610f2','#6f42c1','#d63384','#198754', '#ffc107', '#0dcaf0'] }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.raw || 0;
+                                    let index = context.dataIndex;
+                                    let details = "";
+                                    
+                                    // Priorité 1 : Tooltips dynamiques (JS Filter)
+                                    if (context.chart.data.customTooltips && context.chart.data.customTooltips[index]) {
+                                        details = ` (${context.chart.data.customTooltips[index]})`;
+                                    } 
+                                    // Priorité 2 : Tooltips initiaux (Python Load)
+                                    else if (pieData.tooltips && pieData.tooltips[index]) {
+                                        details = ` (${pieData.tooltips[index]})`;
+                                    }
+                                    
+                                    return context.label + ': ' + value.toLocaleString('fr-FR') + ' €' + details;
+                                }
                             }
                         }
                     }
                 }
+            });
+        } catch(err) { console.warn(err); }
+    }
+
+    // --- CŒUR DU FILTRAGE DYNAMIQUE ---
+    async function applyFilters() {
+        const category_id = document.getElementById('filterCategory').value;
+        const period = document.getElementById('filterPeriod').value;
+        
+        // Est-ce qu'on filtre spécifiquement une catégorie ?
+        const isFilteringByCategory = category_id !== "";
+
+        const params = new URLSearchParams();
+        if(category_id) params.append('category_id', category_id);
+        if(period) params.append('period', period);
+
+        const container = document.getElementById('transactionList');
+        container.innerHTML = `<div class="text-center p-4"><span class="spinner-border" role="status"></span> Chargement...</div>`;
+
+        try {
+            const res = await fetch('/transactions/filter?' + params.toString());
+            if(!res.ok) throw new Error("API non disponible");
+            const transactions = await res.json();
+
+            if(!transactions.length){
+                container.innerHTML = `<div class="p-4 text-center text-muted">Aucune transaction trouvée</div>`;
+                updateBarChart([], [], []);
+                updatePieChart([], [], []);
+                return;
             }
-        });
 
-    } catch(err) {
-        console.warn("Erreur lors du chargement des graphiques", err);
-    }
-}
+            // Afficher la liste HTML
+            container.innerHTML = transactions.map(t => `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold">${t.label}</div>
+                        <div class="small text-muted">${t.date} ${t.category_name ? '• ' + t.category_name : ''}</div>
+                    </div>
+                    <div class="fw-bold ${t.category_type === 'revenu' ? 'text-success' : 'text-danger'}">
+                        ${t.category_type === 'revenu' ? '+' : '-'}${t.amount.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2})} €
+                    </div>
+                </div>
+            `).join('');
 
-// Filtrage des transactions
-async function applyFilters() {
-    const category_id = document.getElementById('filterCategory').value;
-    const period = document.getElementById('filterPeriod').value;
-    const params = new URLSearchParams();
-    if(category_id) params.append('category_id', category_id);
-    if(period) params.append('period', period);
+            // Mise à jour Bar Chart
+            let revenus = transactions.map(t => t.category_type === 'revenu' ? t.amount : 0);
+            let depenses = transactions.map(t => t.category_type === 'depense' ? t.amount : 0);
+            let labels = transactions.map(t => t.label);
+            updateBarChart(labels, revenus, depenses);
 
-    const container = document.getElementById('transactionList');
-    container.innerHTML = `<div class="text-center p-4"><span class="spinner-border" role="status"></span> Chargement...</div>`;
+            // --- Mise à jour Pie Chart (Le fameux Zoom) ---
+            let categoryMap = {}; 
+            let tooltipDetails = {}; 
 
-    try {
-        const res = await fetch('/transactions/filter?' + params.toString());
-        if(!res.ok) throw new Error("API non disponible");
-        const transactions = await res.json();
+            transactions.forEach(t => {
+                // On ne garde que les dépenses pour le camembert
+                if (t.category_type !== 'depense') return;
 
-        if(!transactions.length){
-            container.innerHTML = `<div class="p-4 text-center text-muted">Aucune transaction trouvée</div>`;
-            return;
+                let groupKey;
+                
+                if (isFilteringByCategory) {
+                    // CAS ZOOM : On a choisi "Alimentation" -> On veut voir "Courses", "Resto"
+                    // Ici on utilise category_name envoyé par le Backend
+                    groupKey = t.category_name || 'Autres';
+                } else {
+                    // CAS GLOBAL : On veut voir les PARENTS ("Alimentation", "Logement")
+                    // Ici on utilise parent_name envoyé par le Backend
+                    groupKey = t.parent_name || 'Autres';
+                }
+
+                if (!categoryMap[groupKey]) {
+                    categoryMap[groupKey] = 0;
+                }
+                categoryMap[groupKey] += t.amount;
+            });
+
+            let pieLabels = [];
+            let pieData = [];
+            let pieTooltips = [];
+
+            for(let key in categoryMap){
+                pieLabels.push(key);
+                pieData.push(categoryMap[key]);
+                // En mode filtre JS, on met des tooltips vides pour ne pas afficher de bêtises
+                // (ou on pourrait recréer la logique des sous-catégories si besoin)
+                pieTooltips.push(""); 
+            }
+            
+            updatePieChart(pieLabels, pieData, pieTooltips);
+
+        } catch(err){
+            container.innerHTML = `<div class="p-4 text-center text-danger">Erreur lors du filtrage</div>`;
+            console.error(err);
         }
-
-        container.innerHTML = transactions.map(t => `
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fw-bold">${t.label}</div>
-                    <div class="small text-muted">${t.date} ${t.category_name ? '• ' + t.category_name : ''}</div>
-                </div>
-                <div class="fw-bold ${t.category_type === 'revenu' ? 'text-success' : 'text-danger'}">
-                    ${t.category_type === 'revenu' ? '+' : '-'}${t.amount.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2})} €
-                </div>
-            </div>
-        `).join('');
-
-    } catch(err){
-        container.innerHTML = `<div class="p-4 text-center text-danger">Erreur lors du filtrage</div>`;
-        console.error("Erreur filtrage transactions", err);
     }
-}
 
-window.onload = function() {
-    loadBalance();
-    loadCharts();
-};
+    window.onload = function() {
+        loadBalance();
+        loadCharts();
+    };
 </script>
 {% endblock %}
