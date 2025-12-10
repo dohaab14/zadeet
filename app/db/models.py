@@ -1,17 +1,7 @@
-"""
-Ce fichier définit les modèles de base de données pour les catégories et les transactions
-dans une application de gestion de budget. Il utilise SQLAlchemy pour mapper les
-tables de la base de données aux classes Python.
-
-info: Ce fichier est différent du fichier schemas.py qui permet de mapper les données entrantes/sortantes et 
-permet de ne pas exposer la bdd directement via l'API.
-"""
-
-
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, declarative_base
 from datetime import datetime
-# @TODO: ajouter le modèle pour les plafonds
+
 Base = declarative_base()
 
 class Category(Base):
@@ -20,17 +10,21 @@ class Category(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
     type = Column(String) # "depense" ou "revenu"
-    
-    # --- TA PARTIE : AJOUT DU PLAFOND ---
+
+    # Le plafond est intégré à la catégorie car il est considéré comme un attribut constant.
     monthly_cap = Column(Float, default=0.0) 
-    # ------------------------------------
+    # ------------------------------
     
-    # C'est ici que la magie opère : une catégorie peut avoir un parent
+    # Gestion de la hiérarchie des catégories
     parent_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     
     # Relations
+    # Relation récursive pour les sous-catégories
     parent = relationship("Category", remote_side=[id], backref="subcategories")
+    
+    # Lien vers les transactions
     transactions = relationship("Transaction", back_populates="category")
+
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -40,7 +34,9 @@ class Transaction(Base):
     label = Column(String)
     date = Column(DateTime, default=datetime.utcnow)
     
-    # Lien vers la catégorie (on lie souvent à la sous-catégorie directement)
+    # Lien vers la catégorie
     category_id = Column(Integer, ForeignKey("categories.id"))
     
+    # Relation Many-to-One
+    # Correction : Suppression de la virgule de fin qui causait l'erreur de syntaxe.
     category = relationship("Category", back_populates="transactions")

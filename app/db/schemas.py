@@ -1,37 +1,31 @@
 """
-Ce fichier définit les schémas Pydantic utilisés pour valider les données
-entrantes (POST, PUT) et les données sortantes (réponses API).
-
-Les schémas permettent d’éviter d’exposer directement la structure de la base
-de données et d’assurer une validation automatique des données.
+Ce fichier définit les schémas Pydantic pour la validation et la sérialisation
+des données (Pydantic V2 syntaxe).
 """
 
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 
+# ==============================================================================
+# 1. CATEGORIES (CRUD Standard & Plafonds)
+# ==============================================================================
 
 class CategoryBase(BaseModel):
     name: str
     type: str
     parent_id: Optional[int] = None
-    # J'ajoute le plafond (monthly_cap) ici car il dépend de la catégorie (Logique BDD)
+    # Intégration du plafond (Cap)
     monthly_cap: float = Field(0.0, ge=0, description="Monthly spending limit")
 
 
 class CategoryCreate(CategoryBase):
-    """Schema for creating a new category."""
-
-
-class CategoryCreate(CategoryBase):
-    """
-    Schéma utilisé pour créer une nouvelle catégorie.
-    """
+    """Schéma utilisé pour créer une nouvelle catégorie."""
     pass
 
 
 class CategoryUpdate(BaseModel):
-    """Schema for updating a category (name, type, or cap)."""
+    """Schéma pour modification partielle (inclut la mise à jour du plafond)."""
     name: Optional[str] = None
     type: Optional[str] = None
     parent_id: Optional[int] = None
@@ -39,30 +33,21 @@ class CategoryUpdate(BaseModel):
 
 
 class Category(CategoryBase):
-    """Standard API response schema."""
     """
-    Schéma utilisé pour modifier une catégorie existante.
-    Tous les champs sont optionnels pour permettre des mises à jour partielles.
-    """
-    name: Optional[str] = None
-    type: Optional[str] = None
-    parent_id: Optional[int] = None
-
-
-class Category(CategoryBase):
-    """
-    Schéma renvoyé dans les réponses API.
-    Ajoute l'id et permet d’inclure les sous-catégories et transactions.
-    
+    Schéma renvoyé dans les réponses API (lecture DB).
+    Permet d'inclure les relations (sous-catégories et transactions).
     """
     id: int
     subcategories: List["Category"] = [] 
-    transactions: List["Transaction"] = []
+    transactions: List["Transaction"] = [] # Référence à la classe Transaction ci-dessous
 
     class Config:
-        from_attributes = True
-        orm_mode = True
+        from_attributes = True # Syntaxe Pydantic V2
 
+
+# ==============================================================================
+# 2. TRANSACTIONS (CRUD Standard)
+# ==============================================================================
 
 class TransactionBase(BaseModel):
     label: str
@@ -71,21 +56,12 @@ class TransactionBase(BaseModel):
 
 
 class TransactionCreate(TransactionBase):
-    category_id: int | None = None
-
-
-
-class TransactionCreate(TransactionBase):
-    """
-    Schéma utilisé pour créer une transaction.
-    """
+    """Schéma utilisé pour créer une transaction, inclut la date."""
     date: datetime 
 
 
 class TransactionUpdate(BaseModel):
-    """
-    Mise à jour partielle d'une transaction.
-    """
+    """Mise à jour partielle d'une transaction."""
     label: Optional[str] = None
     amount: Optional[float] = None
     category_id: Optional[int] = None
@@ -93,9 +69,7 @@ class TransactionUpdate(BaseModel):
 
 
 class Transaction(TransactionBase):
-    """
-    Schéma renvoyé par l'API.
-    """
+    """Schéma renvoyé par l'API pour une transaction (lecture DB)."""
     id: int
     date: datetime
 
@@ -103,24 +77,20 @@ class Transaction(TransactionBase):
         from_attributes = True
 
 
-# ==========================================
-# 2. SPECIFIC SCHEMAS (Translatés de ton code)
-# ==========================================
+# ==============================================================================
+# 3. SCHÉMAS SPÉCIFIQUES & ANALYTIQUES
+# ==============================================================================
 
-# Correspond à ton "PlafondUpdateSchema"
 class CapUpdateSchema(BaseModel):
-    """
-    Input schema to update only the cap/limit of a category.
-    """
+    """Schéma d'entrée pour modifier uniquement le plafond."""
     monthly_cap: float = Field(..., ge=0, description="New value for the monthly cap.")
 
 
-# Correspond à ton "CategorieSchema" (version enrichie pour l'affichage)
 class CategoryStatsSchema(BaseModel):
     """
-    Output schema for a category including stats (spent vs cap).
+    Schéma de sortie enrichi pour l'affichage (inclut les dépenses calculées).
     """
-    # Adaptation de ton alias "nom_technique" -> "id"
+    # L'alias permet de mapper l'attribut de la DB (ex: nom_technique) à l'ID de l'API
     id: str = Field(..., alias="nom_technique", description="Technical ID for frontend.")
     
     name: str = Field(..., description="Display name of the category.")
@@ -129,21 +99,21 @@ class CategoryStatsSchema(BaseModel):
     
     class Config:
         from_attributes = True
-        populate_by_name = True
+        populate_by_name = True # Permet d'initialiser via 'id' ou 'nom_technique'
 
 
-# Correspond à ton "MoisDataSchema"
 class MonthDataSchema(BaseModel):
-    """
-    Output schema for a full month view.
-    """
+    """Schéma de sortie pour une vue complète du mois (tableau de bord)."""
     name: str = Field(..., description="Full name of the month (e.g. 'December 2025').")
     
-    categories: List[CategoryStatsSchema] = Field(..., description="List of categories for this month.")
+    categories: List[CategoryStatsSchema] = Field(..., description="Liste des catégories de dépenses pour ce mois.")
     
     class Config:
         from_attributes = True
 
-# Résolution des références circulaires pour Category
+
+# ==============================================================================
+# RÉSOLUTION DES RÉFÉRENCES CIRCULAIRES
+# ==============================================================================
+# Nécessaire pour les relations récursives (Category -> List[Category])
 Category.model_rebuild()
-        orm_mode = True
