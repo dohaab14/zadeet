@@ -61,7 +61,7 @@ class TransactionCreate(TransactionBase):
     """
     Schéma utilisé pour créer une transaction.
     """
-    pass
+    date: datetime 
 
 
 class TransactionUpdate(BaseModel):
@@ -71,6 +71,7 @@ class TransactionUpdate(BaseModel):
     label: Optional[str] = None
     amount: Optional[float] = None
     category_id: Optional[int] = None
+    date: Optional[datetime] = None
 
 
 class Transaction(TransactionBase):

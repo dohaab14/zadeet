@@ -112,13 +112,18 @@ def get_transactions_overview(db: Session):
     total_expenses = sum(
         t.amount for t in transactions if t.category and t.category.type == "depense"
     )
+    total_revenues = sum(
+        t.amount for t in transactions
+        if t.category and t.category.type == "revenu"
+    )
 
     return {
         "transactions": transactions,
         "categories": categories,
         "total_transactions": total_transactions,
         "total_categories": total_categories,
-        "total_expenses": total_expenses
+        "total_expenses": total_expenses,
+        "total_revenues": total_revenues,
     }
 
 # à sauter lors du merge mais jsp où c utilisé ?  @TODO: vérifier si utilisé quelque part
