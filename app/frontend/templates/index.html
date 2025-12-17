@@ -76,6 +76,14 @@
                 <div class="p-4 text-center text-muted">Chargement...</div>
             </div>
         </section>
+
+        <section class="card shadow-sm mb-4">
+            <div class="card-header bg-white fw-bold">Totaux par catégorie</div>
+            <div class="list-group list-group-flush" id="categoryTotalsList">
+                <div class="p-4 text-center text-muted">Chargement...</div>
+            </div>
+        </section>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -88,12 +96,13 @@
         loadNavbar();     
         loadCategoriesIntoSelect(); 
         
-        // 1. Charger les données globales (Solde + Graphs backend 3 mois)
         await loadDashboard(); 
-        
-        // 2. Charger uniquement la liste des transactions récentes (sans écraser les graphs)
         await applyFilters(false); 
+
+        // NEW : charger les totaux par catégorie
+        await loadCategoryTotals();
     });
+
 
     // --- A. CHARGEMENT INTELLIGENT (BACKEND) ---
     async function loadDashboard() {
@@ -236,6 +245,36 @@
             });
         } catch(e) {}
     }
+
+    async function loadCategoryTotals() {
+    const container = document.getElementById('categoryTotalsList');
+    try {
+        const res = await fetch('/api/dashboard/category-totals'); // route que tu as ajoutée côté backend
+        const data = await res.json();
+
+        if (!data.length) {
+            container.innerHTML = '<div class="p-4 text-center text-muted">Aucun total disponible.</div>';
+            return;
+        }
+
+        container.innerHTML = data.map(c => `
+            <div class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                <div>
+                    <div class="fw-bold">${c.category_name}</div>
+                    <div class="small text-muted">
+                        ${c.category_type === 'revenu' ? 'Revenu' : 'Dépense'}
+                    </div>
+                </div>
+                <div class="fw-bold ${c.category_type === 'revenu' ? 'text-success' : 'text-danger'}">
+                    ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(c.total)}
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error("Erreur chargement totaux catégories", e);
+        container.innerHTML = '<div class="p-4 text-center text-danger">Erreur lors du chargement.</div>';
+    }
+}
     </script>
 </body>
 </html>

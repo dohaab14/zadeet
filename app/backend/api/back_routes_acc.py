@@ -14,11 +14,15 @@ def get_db():
 
 @router.get("/stats")
 def get_dashboard_stats(db: Session = Depends(get_db)):
-    """Renvoie toutes les données pour les graphiques et le solde en un seul appel"""
     return {
         "balance": services_accueil.get_total_balance(db),
         "charts": {
             "bar": services_accueil.get_last_3_months_stats(db),
-            "pie": services_accueil.get_category_pie_stats(db)
-        }
+            "pie": services_accueil.get_category_pie_stats(db),
+        },
+        "category_totals": services_accueil.get_category_totals(db),
     }
+
+@router.get("/category-totals")
+def get_dashboard_category_totals(db: Session = Depends(get_db)):
+    return services_accueil.get_category_totals(db)
