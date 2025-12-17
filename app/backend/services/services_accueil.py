@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import extract, func
 from datetime import datetime, timedelta
-from app.db import models 
+from app.backend.db import models 
 from .services_transactions import *
 from collections import defaultdict
 

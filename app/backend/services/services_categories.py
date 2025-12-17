@@ -1,5 +1,5 @@
-from app.db import models
-from app.db.schemas import CategoryCreate, CategoryUpdate
+from app.backend.db import models
+from app.backend.db.schemas import CategoryCreate, CategoryUpdate
 from sqlalchemy.orm import Session
 
 def get_categories(db: Session):
