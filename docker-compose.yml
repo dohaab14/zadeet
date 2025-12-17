@@ -1,0 +1,31 @@
+services:
+  # Service Backend
+  backend:
+    container_name: backend_container
+    build:
+      context: .
+      dockerfile: app/backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persistance de la base de données
+      - ./budget.db:/code/budget.db
+    networks:
+      - zadeet-network
+
+  # Service Frontend
+  frontend:
+    container_name: frontend_container
+    build:
+      context: .
+      dockerfile: app/frontend/Dockerfile
+    ports:
+      - "80:80" 
+    depends_on:
+      - backend
+    networks:
+      - zadeet-network
+
+networks:
+  zadeet-network:
+    driver: bridge
