@@ -23,6 +23,10 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "category_totals": services_accueil.get_category_totals(db),
     }
 
-@router.get("/category-totals")
-def get_dashboard_category_totals(db: Session = Depends(get_db)):
-    return services_accueil.get_category_totals(db)
+@router.get("/category-totals/")
+def get_dashboard_category_totals(
+    period: str = "current_month",
+    category_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    return services_accueil.get_category_totals_filtered(db, period, category_id)
