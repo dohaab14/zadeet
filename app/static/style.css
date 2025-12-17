@@ -45,6 +45,20 @@ body {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
 }
 
+/* Logo styles */
+.navbar-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+}
+
+.home-logo {
+    height: 120px;
+    width: auto;
+    object-fit: contain;
+    margin-bottom: 1rem;
+}
+
 /* 3. Couleurs de statut (Transactions/Solde) */
 .text-success {
     color: var(--success-bank) !important;
@@ -68,4 +82,79 @@ h3 {
 
 .list-group-item {
     border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* ===== THEME SOMBRE ===== */
+:root {
+    --bg-light: #f4f6f9;
+    --bg-card: #ffffff;
+    --text-light: #343a40;
+    --text-muted: #6c757d;
+    --border-light: rgba(0, 0, 0, 0.05);
+}
+
+body.dark-theme {
+    --bg-light: #1a1a1a;
+    --bg-card: #2d2d2d;
+    --text-light: #e9ecef;
+    --text-muted: #adb5bd;
+    --border-light: rgba(255, 255, 255, 0.1);
+}
+
+body {
+    background: var(--bg-light);
+    color: var(--text-light);
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme {
+    background: var(--bg-light);
+    color: var(--text-light);
+}
+
+.card {
+    background-color: var(--bg-card);
+    border-color: var(--border-light);
+}
+
+.card,
+.list-group-item {
+    background-color: var(--bg-card);
+    color: var(--text-light);
+    border-color: var(--border-light);
+}
+
+body.dark-theme .card,
+body.dark-theme .list-group-item {
+    background-color: var(--bg-card);
+    color: var(--text-light);
+    border-color: var(--border-light);
+}
+
+body.dark-theme .text-muted {
+    color: var(--text-muted) !important;
+}
+
+body.dark-theme .form-select,
+body.dark-theme .form-control {
+    background-color: var(--bg-card);
+    color: var(--text-light);
+    border-color: var(--border-light);
+}
+
+body.dark-theme .form-select option {
+    background-color: var(--bg-card);
+    color: var(--text-light);
+}
+
+#themeToggle {
+    font-size: 1.25rem;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    transition: all 0.3s ease;
+}
+
+#themeToggle:hover {
+    border-color: rgba(255, 255, 255, 1);
+    background-color: rgba(255, 255, 255, 0.1);
 }
