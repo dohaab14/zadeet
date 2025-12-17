@@ -69,3 +69,187 @@ h3 {
 .list-group-item {
     border-color: rgba(0, 0, 0, 0.08);
 }
+
+/* ===== THEME SOMBRE ===== */
+:root {
+    --bg-light: #f4f6f9;
+    --bg-card: #ffffff;
+    --text-light: #343a40;
+    --text-muted: #6c757d;
+    --border-light: rgba(0, 0, 0, 0.05);
+}
+
+body.dark-theme {
+    --bg-light: #1a1a1a;
+    --bg-card: #2d2d2d;
+    --text-light: #e9ecef;
+    --text-muted: #adb5bd;
+    --border-light: rgba(255, 255, 255, 0.1);
+}
+
+body {
+    background: var(--bg-light);
+    color: var(--text-light);
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme {
+    background: var(--bg-light) !important;
+    color: var(--text-light) !important;
+}
+
+body.dark-theme * {
+    background-color: inherit !important;
+    color: inherit !important;
+}
+
+.card {
+    background-color: var(--bg-card);
+    border-color: var(--border-light);
+}
+
+.card,
+.list-group-item {
+    background-color: var(--bg-card);
+    color: var(--text-light);
+    border-color: var(--border-light);
+}
+
+body.dark-theme .card,
+body.dark-theme .list-group-item {
+    background-color: var(--bg-card);
+    color: var(--text-light);
+    border-color: var(--border-light);
+}
+
+body.dark-theme .text-muted {
+    color: var(--text-muted) !important;
+}
+
+body.dark-theme .form-select,
+body.dark-theme .form-control {
+    background-color: var(--bg-card);
+    color: var(--text-light);
+    border-color: var(--border-light);
+}
+
+body.dark-theme .form-select option {
+    background-color: var(--bg-card);
+    color: var(--text-light);
+}
+
+/* Appliquer le thème sombre à tous les éléments */
+body.dark-theme h1,
+body.dark-theme h2,
+body.dark-theme h3,
+body.dark-theme h4,
+body.dark-theme h5,
+body.dark-theme h6,
+body.dark-theme label,
+body.dark-theme p,
+body.dark-theme a {
+    color: var(--text-light);
+}
+
+body.dark-theme .navbar {
+    background-color: #1a1a1a !important;
+    border-bottom: 1px solid var(--border-light);
+}
+
+body.dark-theme .badge {
+    background-color: var(--bg-card);
+    color: var(--text-light);
+}
+
+body.dark-theme .btn-outline-light {
+    color: var(--text-light);
+    border-color: var(--text-light);
+}
+
+body.dark-theme .container {
+    color: var(--text-light);
+}
+
+/* Force la couleur verte du solde en mode sombre */
+body.dark-theme #totalBalanceDisplay {
+    color: var(--success-bank) !important;
+}
+
+/* Force le thème sombre sur TOUS les éléments */
+body.dark-theme {
+    background-color: #1a1a1a !important;
+}
+
+body.dark-theme header,
+body.dark-theme section,
+body.dark-theme div,
+body.dark-theme span,
+body.dark-theme article,
+body.dark-theme nav,
+body.dark-theme main {
+    background-color: var(--bg-light) !important;
+    color: var(--text-light) !important;
+}
+
+body.dark-theme .bg-light {
+    background-color: #1a1a1a !important;
+}
+
+body.dark-theme .text-center {
+    color: var(--text-light) !important;
+}
+
+body.dark-theme .text-secondary {
+    color: var(--text-muted) !important;
+}
+
+body.dark-theme input,
+body.dark-theme select,
+body.dark-theme textarea,
+body.dark-theme button:not(.btn-warning) {
+    background-color: var(--bg-card) !important;
+    color: var(--text-light) !important;
+    border-color: var(--border-light) !important;
+}
+
+body.dark-theme table {
+    color: var(--text-light);
+}
+
+body.dark-theme th {
+    background-color: var(--bg-card) !important;
+    color: var(--text-light) !important;
+}
+
+body.dark-theme td {
+    background-color: var(--bg-light) !important;
+    color: var(--text-light) !important;
+}
+
+body.dark-theme .spinner-border {
+    border-color: var(--text-light) !important;
+}
+
+/* ===== BOUTON THEME TOGGLE ===== */
+#themeToggle {
+    font-size: 1.5rem;
+    padding: 0.75rem 1rem;
+    margin-right: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#themeToggle:hover {
+    border-color: rgba(255, 255, 255, 1);
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+#themeIcon {
+    font-size: 1.5rem;
+    display: inline-block;
+}
