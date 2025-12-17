@@ -1,5 +1,5 @@
-from app.db.database import engine, SessionLocal
-from app.db import models
+from app.backend.db.database import engine, SessionLocal
+from app.backend.db import models
 from datetime import datetime, timedelta
 
 # 1. CRÉATION DES TABLES
