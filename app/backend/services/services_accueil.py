@@ -5,6 +5,47 @@ from app.backend.db import models
 from .services_transactions import *
 from collections import defaultdict
 
+def get_category_totals(db: Session):
+    """
+    Totaux par catégorie (et type) sur tout l'historique.
+    Retourne une liste de dicts.
+    """
+    rows = (
+        db.query(
+            models.Category.id.label("category_id"),
+            models.Category.name.label("category_name"),
+            models.Category.type.label("category_type"),
+            func.sum(models.Transaction.amount).label("total"),
+        )
+        .join(models.Transaction, models.Transaction.category_id == models.Category.id)
+        .group_by(models.Category.id, models.Category.name, models.Category.type)
+        .all()
+    )
+
+    return [
+        {
+            "category_id": r.category_id,
+            "category_name": r.category_name,
+            "category_type": r.category_type,
+            "total": float(r.total or 0),
+        }
+        for r in rows
+    ]
+
+def get_parent_category_totals(db: Session):
+    """
+    Totaux par catégorie parent (ou par catégorie elle‑même si pas de parent).
+    """
+    rows = (
+        db.query(
+            func.coalesce(models.Category.parent_id, models.Category.id).label("group_id"),
+            func.coalesce(models.Category.parent_id, models.Category.id),
+            func.coalesce(models.Category.parent_id, models.Category.id),
+            func.coalesce(models.Category.parent.has().name, models.Category.name),
+        )
+    )
+
+
 def get_total_balance(db: Session):
     """
     Calcule le solde total : somme des revenus - somme des dépenses.
