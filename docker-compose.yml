@@ -9,7 +9,7 @@ services:
       - "8000:8000"
     volumes:
       # Persistance de la base de données
-      - ./budget.db:/code/budget.db
+      - ./budget.db:/code/budget.db #il faut créer un service pour la bd ; sgbd => permettre plusieurs frontend pour un même backend, archi orientée event, permettre accès concurent écriture et lecture ; bd à telle adresse dans le réseau (nom de domaine dans docker compose)
     networks:
       - zadeet-network
 
@@ -22,7 +22,9 @@ services:
     ports:
       - "80:80" 
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy  # make sure `frontend` is healthy before starting
+
     networks:
       - zadeet-network
 
