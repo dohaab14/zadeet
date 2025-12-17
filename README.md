@@ -1,12 +1,9 @@
-* Install requirements.txt
-` pip install -r requirements.txt`
-
-* Create database
+* Create database with information in it
 ` python3 inti_db.py`
 
 
-* Launch webapplication 
-` uvicorn app.backend.main:app --reload `
+* Launch application 
+` docker-compose up --build`
 
-**Accéder à l'application** : [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+**Accéder à l'application** : [http://127.0.0.1/](http://127.0.0.1/)
 
