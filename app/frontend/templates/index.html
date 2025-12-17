@@ -46,7 +46,7 @@
                         <label class="form-label small text-muted">Catégorie</label>
                         <select id="filterCategory" class="form-select">
                             <option value="">Toutes les catégories</option>
-                            </select>
+                        </select>
                     </div>
                     <div class="col-md-2 d-grid">
                         <button class="btn btn-primary" onclick="applyFilters(true)">Actualiser</button>
@@ -83,7 +83,6 @@
                 <div class="p-4 text-center text-muted">Chargement...</div>
             </div>
         </section>
-
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -94,34 +93,29 @@
 
     document.addEventListener("DOMContentLoaded", async () => {
         loadNavbar();     
-        loadCategoriesIntoSelect(); 
+        await loadCategoriesIntoSelect(); 
         
         await loadDashboard(); 
+        
+        // Charger liste + totaux avec filtres par défaut
         await applyFilters(false); 
-
-        // NEW : charger les totaux par catégorie
-        await loadCategoryTotals();
     });
-
 
     // --- A. CHARGEMENT INTELLIGENT (BACKEND) ---
     async function loadDashboard() {
         try {
-            // Appel vers ta route optimisée
             const res = await fetch('/api/dashboard/stats'); 
             const data = await res.json();
 
-            // 1. Mise à jour du solde
             const solde = data.balance;
             const el = document.getElementById('totalBalanceDisplay');
+            el.innerHTML = ''; // Enlever le spinner
             el.innerText = new Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR'}).format(solde);
             el.className = `display-4 fw-bold ${solde >= 0 ? 'text-success' : 'text-danger'}`;
             document.getElementById('balanceLabel').innerText = solde >= 0 ? "Vos finances sont saines" : "Attention au découvert";
 
-            // 2. Mise à jour des graphiques avec les données du backend
             updateChartsFromData(data.charts.bar.labels, data.charts.bar.revenus, data.charts.bar.depenses, 
-                                 data.charts.pie.labels, data.charts.pie.data, 'bar');
-
+                                 data.charts.pie.labels, data.charts.pie.data);
         } catch(e) { console.error("Erreur dashboard", e); }
     }
 
@@ -130,23 +124,26 @@
         const period = document.getElementById('filterPeriod').value;
         const catId = document.getElementById('filterCategory').value;
         
-        // Construction de l'URL avec les filtres
         const params = new URLSearchParams({ period });
         if(catId) params.append('category_id', catId);
 
         try {
-            const res = await fetch(`/api/transactions/?${params}`); // Note le /api/
+            // 1. Charger les transactions
+            const res = await fetch(`/api/transactions/?${params}`);
             const transactions = await res.json();
-            
-            // Toujours mettre à jour la liste
             updateList(transactions);
 
-            // Ne mettre à jour les graphiques QUE si c'est une demande explicite (clic bouton)
-            // Sinon on garde les graphiques "Last 3 months" chargés par loadDashboard() au démarrage
+            // 2. Mettre à jour les graphiques si demandé
             if (updateCharts) {
                 updateChartsFromTransactions(transactions);
             }
-        } catch(e) { console.error("Erreur filtres", e); }
+
+            // 3. Charger les totaux par catégorie avec les mêmes filtres
+            await loadCategoryTotals(period, catId);
+
+        } catch(e) { 
+            console.error("Erreur filtres", e); 
+        }
     }
 
     function updateList(transactions) {
@@ -172,11 +169,45 @@
         `).join('');
     }
 
-    // --- C. OUTILS POUR LES GRAPHIQUES ---
+    // --- C. TOTAUX PAR CATÉGORIE ---
+    async function loadCategoryTotals(period, catId = null) {
+        const container = document.getElementById('categoryTotalsList');
+        
+        const params = new URLSearchParams({ period });
+        if (catId) params.append('category_id', catId);
 
-    // Cas 1: Données venant du Backend (Au chargement)
+        try {
+            const res = await fetch(`/api/dashboard/category-totals/?${params.toString()}`);
+            const data = await res.json();
+
+            console.log('Totaux catégories:', data); // Debug
+
+            if (!data.length) {
+                container.innerHTML = '<div class="p-4 text-center text-muted">Aucun total disponible pour cette période.</div>';
+                return;
+            }
+
+            container.innerHTML = data.map(c => `
+                <div class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+                    <div>
+                        <div class="fw-bold">${c.category_name}</div>
+                        <div class="small text-muted">
+                            ${c.category_type === 'revenu' ? 'Revenu' : 'Dépense'}
+                        </div>
+                    </div>
+                    <div class="fw-bold ${c.category_type === 'revenu' ? 'text-success' : 'text-danger'}">
+                        ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(c.total)}
+                    </div>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.error("Erreur chargement totaux catégories", e);
+            container.innerHTML = '<div class="p-4 text-center text-danger">Erreur lors du chargement.</div>';
+        }
+    }
+
+    // --- D. GRAPHIQUES ---
     function updateChartsFromData(labels, dataRev, dataDep, pieLabels, pieData) {
-        // Bar Chart
         const ctxBar = document.getElementById('barChart');
         if(barChartInstance) barChartInstance.destroy();
         barChartInstance = new Chart(ctxBar, {
@@ -190,45 +221,31 @@
             }
         });
 
-        // Pie Chart
         const ctxPie = document.getElementById('pieChart');
         if(pieChartInstance) pieChartInstance.destroy();
         pieChartInstance = new Chart(ctxPie, {
             type: 'doughnut',
             data: {
                 labels: pieLabels,
-                datasets: [{
-                    data: pieData,
-                    backgroundColor: ['#0d6efd','#6610f2','#6f42c1','#d63384','#fd7e14','#ffc107','#20c997']
-                }]
+                datasets: [{ data: pieData, backgroundColor: ['#0d6efd','#6610f2','#6f42c1','#d63384','#fd7e14','#ffc107','#20c997'] }]
             }
         });
     }
 
-    // Cas 2: Données calculées en JS (Quand on filtre)
     function updateChartsFromTransactions(transactions) {
-        // Préparation Bar Chart (Simplifié pour le filtrage : on groupe tout, ou par jour si besoin)
-        // Ici on fait un simple "Total Revenu vs Total Dépense" de la sélection
         const totalRev = transactions.filter(t => t.category_type === 'revenu').reduce((sum, t) => sum + t.amount, 0);
         const totalDep = transactions.filter(t => t.category_type === 'depense').reduce((sum, t) => sum + t.amount, 0);
 
-        // Préparation Pie Chart
         const catMap = {};
         transactions.filter(t => t.category_type === 'depense').forEach(t => {
             const key = t.category_name || 'Autre';
             catMap[key] = (catMap[key] || 0) + t.amount;
         });
 
-        updateChartsFromData(
-            ['Sélection'], // Label Bar
-            [totalRev],    // Data Revenu
-            [totalDep],    // Data Dépense
-            Object.keys(catMap), // Labels Pie
-            Object.values(catMap) // Data Pie
-        );
+        updateChartsFromData(['Sélection'], [totalRev], [totalDep], Object.keys(catMap), Object.values(catMap));
     }
 
-    // --- D. UTILITAIRE ---
+    // --- E. UTILITAIRE ---
     async function loadCategoriesIntoSelect() {
         try {
             const res = await fetch('/api/categories/');
@@ -243,38 +260,10 @@
                     });
                 }
             });
-        } catch(e) {}
-    }
-
-    async function loadCategoryTotals() {
-    const container = document.getElementById('categoryTotalsList');
-    try {
-        const res = await fetch('/api/dashboard/category-totals'); // route que tu as ajoutée côté backend
-        const data = await res.json();
-
-        if (!data.length) {
-            container.innerHTML = '<div class="p-4 text-center text-muted">Aucun total disponible.</div>';
-            return;
+        } catch(e) {
+            console.error('Erreur catégories', e);
         }
-
-        container.innerHTML = data.map(c => `
-            <div class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
-                <div>
-                    <div class="fw-bold">${c.category_name}</div>
-                    <div class="small text-muted">
-                        ${c.category_type === 'revenu' ? 'Revenu' : 'Dépense'}
-                    </div>
-                </div>
-                <div class="fw-bold ${c.category_type === 'revenu' ? 'text-success' : 'text-danger'}">
-                    ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(c.total)}
-                </div>
-            </div>
-        `).join('');
-    } catch (e) {
-        console.error("Erreur chargement totaux catégories", e);
-        container.innerHTML = '<div class="p-4 text-center text-danger">Erreur lors du chargement.</div>';
     }
-}
     </script>
 </body>
 </html>
