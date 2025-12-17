@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - Zadeet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-light">
+
+    <div id="navbar-placeholder"></div>
+
+    <div class="container pb-5">
+        <header class="text-center mb-4">
+            <h1 class="fw-bold">Transactions</h1>
+        </header>
+
+        <!-- Statistiques -->
+        <section class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row text-center" id="stats-container">
+                    <div class="col-md-12 text-muted">Chargement des statistiques...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filtres -->
+        <section class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3">Filtrer les transactions</h5>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Période</label>
+                        <select id="filterPeriod" class="form-select">
+                            <option value="current_month" selected>Mois en cours</option>
+                            <option value="last_month">Mois dernier</option>
+                            <option value="last_3_months">3 derniers mois</option>
+                            <option value="all">Tout</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button class="btn btn-primary" onclick="applyPeriodFilter()">Actualiser</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bouton Ajouter -->
+        <section class="d-flex flex-column flex-md-row gap-2 mb-4">
+            <button class="btn btn-primary flex-fill fw-bold" data-bs-toggle="modal" data-bs-target="#expenseModal" onclick="prepareModal('create')">
+                <i class="bi bi-plus-circle me-1"></i> Ajouter une transaction
+            </button>
+        </section>
+
+        <!-- Liste des transactions -->
+        <section class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h5 mb-3 fw-bold border-bottom pb-2">Historique</h2>
+                <div id="transactions-list" class="list-group list-group-flush">
+                    <div class="text-center py-4"><span class="spinner-border text-primary"></span></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="expenseModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalTitle">Nouvelle transaction</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="transactionForm">
+                        <input type="hidden" id="tId">
+                        <div class="mb-3">
+                            <label class="form-label">Libellé</label>
+                            <input type="text" class="form-control" id="tLabel" required>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Montant (€)</label>
+                                <input type="number" class="form-control" id="tAmount" step="0.01" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Date</label>
+                                <input type="date" class="form-control" id="tDate" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Catégorie</label>
+                            <select class="form-select" id="tCategory">
+                                <option value="">Chargement...</option>
+                            </select>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary px-4">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/app.js"></script>
+    
+    <script>
+    let allTransactions = [];
+    let allCategories = [];
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        loadNavbar();
+        await Promise.all([loadCategories(), loadTransactions()]);
+        calculateStats();
+    });
+
+    async function loadCategories() {
+        try {
+            const res = await fetch('/api/categories/'); 
+            allCategories = await res.json();
+            const select = document.getElementById('tCategory');
+            select.innerHTML = '<option value="">-- Sans catégorie --</option>';
+            
+            allCategories.forEach(cat => {
+                select.innerHTML += `<option value="${cat.id}">${cat.name} (${cat.type})</option>`;
+                if(cat.subcategories) {
+                    cat.subcategories.forEach(sub => {
+                        select.innerHTML += `<option value="${sub.id}">&nbsp;&nbsp;↳ ${sub.name}</option>`;
+                    });
+                }
+            });
+        } catch(e) { console.error("Erreur chargement catégories", e); }
+    }
+
+   async function applyPeriodFilter() {
+    const period = document.getElementById('filterPeriod').value;
+    await loadTransactions(period);
+    calculateStats(); 
+}
+
+
+    async function loadTransactions(period = 'current_month') {
+    const listContainer = document.getElementById('transactions-list');
+
+    try {
+        const url = `/api/transactions/?period=${period}`;
+        const res = await fetch(url);
+
+        if (!res.ok) throw new Error("Erreur API");
+
+        allTransactions = await res.json();
+
+            if(allTransactions.length === 0) {
+                listContainer.innerHTML = '<div class="text-center text-muted py-4">Aucune transaction.</div>';
+                return;
+            }
+
+            listContainer.innerHTML = allTransactions.map(t => {
+                const categoryName = t.category_name || (t.category ? t.category.name : 'Non classé');
+                const isRevenu = (t.category_type === 'revenu');
+                const parentInfo = (t.parent_name && t.parent_name !== 'Autre' && t.parent_name !== categoryName) 
+ ? `<span class="text-muted ms-1">(${t.parent_name})</span>` : '';
+
+                return `
+                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                    <div>
+                        <div class="fw-bold fs-5">${t.label}</div>
+                        <div class="text-muted small">
+                            ${t.date} • ${categoryName} ${parentInfo}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fs-5 fw-bold ${isRevenu ? 'text-success' : 'text-danger'}">
+                            ${isRevenu ? '+' : '-'} ${new Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR'}).format(t.amount)}
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-1">
+                            <button class="btn btn-sm btn-outline-secondary py-0" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#expenseModal" 
+                                    onclick="prepareModal('edit', ${t.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            
+                            <button class="btn btn-sm btn-outline-danger py-0" onclick="deleteTransaction(${t.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            console.error(e);
+            listContainer.innerHTML = `<div class="text-danger p-3 text-center">Impossible de charger les transactions.<br>Vérifiez que le Backend tourne et que l'URL est /api/transactions/</div>`;
+        }
+    }
+
+    function calculateStats() {
+        let depenses = 0;
+        let revenus = 0;
+
+        allTransactions.forEach(t => {
+            const type = t.category_type || (t.category ? t.category.type : 'depense');
+            if(type === 'revenu') revenus += t.amount;
+            else depenses += t.amount; 
+        });
+
+        document.getElementById('stats-container').innerHTML = `
+            <div class="col-6 mb-2">
+                <div class="text-uppercase small text-secondary">Dépenses</div>
+                <div class="fs-4 fw-bold text-danger">- ${formatMoney(depenses)}</div>
+            </div>
+            <div class="col-6 mb-2">
+                <div class="text-uppercase small text-secondary">Revenus</div>
+                <div class="fs-4 fw-bold text-success">+ ${formatMoney(revenus)}</div>
+            </div>
+        `;
+    }
+
+    window.prepareModal = (mode, id = null) => {
+        const modalTitle = document.getElementById('modalTitle');
+        const form = document.getElementById('transactionForm');
+        if(mode === 'create') {
+            modalTitle.textContent = "Nouvelle transaction";
+            form.reset();
+            document.getElementById('tId').value = "";
+            document.getElementById('tDate').value = new Date().toISOString().split('T')[0];
+        } else {
+            modalTitle.textContent = "Modifier la transaction";
+            const t = allTransactions.find(x => x.id === id);
+            if(t) {
+                document.getElementById('tId').value = t.id;
+                document.getElementById('tLabel').value = t.label;
+                document.getElementById('tAmount').value = t.amount;
+                const safeDate = t.date.includes('/') ? t.date.split('/').reverse().join('-') : t.date;
+                document.getElementById('tDate').value = safeDate;
+                document.getElementById('tCategory').value = t.category_id || (t.category ? t.category.id : "");
+            }
+        }
+    };
+
+    document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('tId').value;
+        const data = {
+            label: document.getElementById('tLabel').value,
+            amount: parseFloat(document.getElementById('tAmount').value),
+            date: document.getElementById('tDate').value,
+            category_id: document.getElementById('tCategory').value || null
+        };
+        const url = id ? `/api/transactions/${id}` : '/api/transactions/';
+        const method = id ? 'PUT' : 'POST';
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if(res.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('expenseModal')).hide();
+                await loadTransactions(document.getElementById('filterPeriod').value);
+                calculateStats();
+            } else alert("Erreur lors de l'enregistrement");
+        } catch(err) { alert("Erreur réseau"); console.error(err); }
+    });
+
+    window.deleteTransaction = async (id) => {
+        if(!confirm("Supprimer cette transaction ?")) return;
+        try {
+            await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+            await loadTransactions(document.getElementById('filterPeriod').value);
+            calculateStats();
+        } catch(e) { alert("Erreur suppression"); }
+    };
+
+    function formatMoney(amount) {
+        return new Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR'}).format(amount);
+    }
+    </script>
+</body>
+</html>

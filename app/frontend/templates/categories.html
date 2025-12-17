@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catégories - Zadeet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../static/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+
+    <div id="navbar-placeholder"></div>
+
+    <div class="container pb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="fw-bold">Catégories</h1>
+            <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#catModal" onclick="prepareModal('create')">
+                <i class="bi bi-plus-lg"></i> Ajouter
+            </button>
+        </div>
+
+        <div id="categories-grid" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <!-- Rempli par JS -->
+            <div class="col-12 text-center"><span class="spinner-border text-primary"></span></div>
+        </div>
+    </div>
+
+    <!-- MODAL UNIQUE -->
+    <div class="modal fade" id="catModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalTitle">Nouvelle Catégorie</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="catForm">
+                        <input type="hidden" id="cId">
+                        <div class="mb-3">
+                            <label class="form-label">Nom</label>
+                            <input type="text" class="form-control" id="cName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" id="cType">
+                                <option value="depense">Dépense</option>
+                                <option value="revenu">Revenu</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Parent (Optionnel)</label>
+                            <select class="form-select" id="cParent">
+                                <option value="">-- Aucun --</option>
+                                <!-- Rempli par JS -->
+                            </select>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/app.js"></script>
+
+    <script>
+    let categoriesData = [];
+
+    document.addEventListener("DOMContentLoaded", loadCategories);
+
+    async function loadCategories() {
+        const grid = document.getElementById('categories-grid');
+        const parentSelect = document.getElementById('cParent');
+        
+        try {
+            const res = await fetch('/api/categories/');
+            categoriesData = await res.json();
+            
+            // Remplir le select pour le modal
+            parentSelect.innerHTML = '<option value="">-- Aucun --</option>';
+            categoriesData.forEach(c => {
+                parentSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+            });
+
+            if(categoriesData.length === 0) {
+                grid.innerHTML = '<p class="text-muted text-center col-12">Aucune catégorie.</p>';
+                return;
+            }
+
+            // Générer le HTML
+            grid.innerHTML = categoriesData.map(c => `
+                <div class="col">
+                    <div class="card shadow-sm h-100 border-0">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                            <div>
+                                <span class="fw-bold fs-5">${c.name}</span>
+                                <span class="badge rounded-pill ${c.type==='revenu'?'bg-success':'bg-danger'} opacity-75 ms-1">${c.type}</span>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-link text-secondary p-0" data-bs-toggle="dropdown">•••</button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#" onclick="prepareModal('edit', ${c.id})">Modifier</a></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteCat(${c.id})">Supprimer</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            ${c.subcategories && c.subcategories.length > 0 ? 
+                                '<ul class="list-group list-group-flush">' + 
+                                c.subcategories.map(sub => `
+                                    <li class="list-group-item px-0 d-flex justify-content-between bg-transparent">
+                                        <span>↳ ${sub.name}</span>
+                                        <div>
+                                            <button class="btn btn-sm btn-link p-0 me-2" onclick="prepareModal('edit', ${sub.id}, true)">✏️</button>
+                                            <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteCat(${sub.id})">🗑️</button>
+                                        </div>
+                                    </li>
+                                `).join('') + 
+                                '</ul>' 
+                                : '<p class="text-muted small fst-italic mb-0">Pas de sous-catégorie.</p>'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+        } catch(e) {
+            grid.innerHTML = `<div class="alert alert-danger col-12">Erreur de chargement. Vérifiez l'API.</div>`;
+        }
+    }
+
+    // Gestion Création / Edition
+    window.prepareModal = (mode, id = null, isSub = false) => {
+        const form = document.getElementById('catForm');
+        const title = document.getElementById('modalTitle');
+        
+        if(mode === 'create') {
+            title.textContent = "Nouvelle Catégorie";
+            form.reset();
+            document.getElementById('cId').value = "";
+        } else {
+            title.textContent = "Modifier";
+            // Trouver la catégorie ou sous-catégorie dans nos données locales
+            let item;
+            if(!isSub) item = categoriesData.find(c => c.id === id);
+            else {
+                categoriesData.forEach(c => {
+                    if(c.subcategories) {
+                        const found = c.subcategories.find(s => s.id === id);
+                        if(found) item = found;
+                    }
+                });
+            }
+
+            if(item) {
+                document.getElementById('cId').value = item.id;
+                document.getElementById('cName').value = item.name;
+                document.getElementById('cType').value = item.type || 'depense';
+                document.getElementById('cParent').value = item.parent_id || "";
+            }
+        }
+    };
+
+    // Sauvegarde
+    document.getElementById('catForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('cId').value;
+        const data = {
+            name: document.getElementById('cName').value,
+            type: document.getElementById('cType').value,
+            parent_id: document.getElementById('cParent').value || null
+        };
+
+        const url = id ? `/api/categories/${id}` : '/api/categories/';
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            await fetch(url, {
+                method: method,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            bootstrap.Modal.getInstance(document.getElementById('catModal')).hide();
+            loadCategories();
+        } catch(e) { alert("Erreur sauvegarde"); }
+    });
+
+    // Suppression
+    window.deleteCat = async (id) => {
+        if(confirm("Supprimer ?")) {
+            await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+            loadCategories();
+        }
+    };
+    </script>
+</body>
+</html>

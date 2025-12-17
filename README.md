@@ -107,7 +107,7 @@ python3 seed_db.py
 
 ### 5. Lancer l'application
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.backend.main:app --reload
 ```
 
 **Accéder à l'application** : [http://127.0.0.1:8000/](http://127.0.0.1:8000/)

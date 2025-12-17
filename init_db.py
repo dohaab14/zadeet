@@ -70,21 +70,21 @@ db.commit()
 transactions = []
 
 # --- CE MOIS-CI ---
-transactions.append(models.Transaction(amount=1500, label="Salaire", date=get_date_current_month(1), category_id=cat_salaire.id))
-transactions.append(models.Transaction(amount=800, label="Loyer", date=get_date_current_month(5), category_id=cat_loyer.id))
+transactions.append(models.Transaction(amount=1500, label="Salaire décembre", date=get_date_current_month(1), category_id=cat_salaire.id))
+transactions.append(models.Transaction(amount=800, label="Loyer décembre", date=get_date_current_month(5), category_id=cat_loyer.id))
 transactions.append(models.Transaction(amount=50, label="Plein Essence", date=get_date_current_month(6), category_id=cat_essence.id))
 transactions.append(models.Transaction(amount=45.50, label="Carrefour City", date=get_date_current_month(10), category_id=cat_courses.id))
 transactions.append(models.Transaction(amount=15.99, label="Netflix", date=get_date_current_month(2), category_id=cat_netflix.id))
 
 # --- LE MOIS DERNIER ---
-transactions.append(models.Transaction(amount=1500, label="Salaire", date=get_date_last_month(1), category_id=cat_salaire.id))
+transactions.append(models.Transaction(amount=1500, label="Salaire novembre", date=get_date_last_month(1), category_id=cat_salaire.id))
 transactions.append(models.Transaction(amount=60, label="Resto Italien", date=get_date_last_month(10), category_id=cat_resto.id))
 transactions.append(models.Transaction(amount=120, label="Courses mois dernier", date=get_date_last_month(5), category_id=cat_courses.id))
-transactions.append(models.Transaction(amount=800, label="Loyer", date=get_date_last_month(1), category_id=cat_loyer.id))
+transactions.append(models.Transaction(amount=800, label="Loyer novembre", date=get_date_last_month(1), category_id=cat_loyer.id))
 
 # --- IL Y A 2 MOIS ---
-transactions.append(models.Transaction(amount=1500, label="Salaire", date=get_date_two_months_ago(1), category_id=cat_salaire.id))
-transactions.append(models.Transaction(amount=800, label="Loyer", date=get_date_two_months_ago(1), category_id=cat_loyer.id))
+transactions.append(models.Transaction(amount=1500, label="Salaire octobre", date=get_date_two_months_ago(1), category_id=cat_salaire.id))
+transactions.append(models.Transaction(amount=800, label="Loyer octobre", date=get_date_two_months_ago(1), category_id=cat_loyer.id))
 
 db.add_all(transactions)
 db.commit()
