@@ -2,7 +2,7 @@
 ` pip install -r requirements.txt`
 
 * Create database
-` python3 inti_db.py`
+` python3 init_db.py`
 
 
 * Launch webapplication 
