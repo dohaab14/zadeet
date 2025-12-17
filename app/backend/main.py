@@ -47,11 +47,11 @@ frontend_dir = os.path.join(backend_dir, "../frontend")
 # Il faut monter JS et STATIC (CSS) avant le ROOT "/" sinon ils seront masqués
 
 # Pour que <script src="/js/app.js"> fonctionne :
-app.mount("/js", StaticFiles(directory=os.path.join(frontend_dir, "js")), name="js")
+#app.mount("/js", StaticFiles(directory=os.path.join(frontend_dir, "js")), name="js")
 
 # Pour que <link href="/static/style.css"> fonctionne :
-app.mount("/static", StaticFiles(directory=os.path.join(frontend_dir, "static")), name="static_files")
+#app.mount("/static", StaticFiles(directory=os.path.join(frontend_dir, "static")), name="static_files")
 
 # Pour servir les pages HTML (templates) à la racine "/"
 # ATTENTION : Doit toujours être en dernier car il capture tout le reste
-app.mount("/", StaticFiles(directory=os.path.join(frontend_dir, "templates"), html=True), name="templates")
+#app.mount("/", StaticFiles(directory=os.path.join(frontend_dir, "templates"), html=True), name="templates")

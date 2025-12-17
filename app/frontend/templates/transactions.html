@@ -17,6 +17,7 @@
             <h1 class="fw-bold">Transactions</h1>
         </header>
 
+        <!-- Statistiques -->
         <section class="card shadow-sm mb-4">
             <div class="card-body">
                 <div class="row text-center" id="stats-container">
@@ -25,12 +26,35 @@
             </div>
         </section>
 
+        <!-- Filtres -->
+        <section class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3">Filtrer les transactions</h5>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Période</label>
+                        <select id="filterPeriod" class="form-select">
+                            <option value="current_month" selected>Mois en cours</option>
+                            <option value="last_month">Mois dernier</option>
+                            <option value="last_3_months">3 derniers mois</option>
+                            <option value="all">Tout</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button class="btn btn-primary" onclick="applyPeriodFilter()">Actualiser</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bouton Ajouter -->
         <section class="d-flex flex-column flex-md-row gap-2 mb-4">
             <button class="btn btn-primary flex-fill fw-bold" data-bs-toggle="modal" data-bs-target="#expenseModal" onclick="prepareModal('create')">
                 <i class="bi bi-plus-circle me-1"></i> Ajouter une transaction
             </button>
         </section>
 
+        <!-- Liste des transactions -->
         <section class="card shadow-sm">
             <div class="card-body">
                 <h2 class="h5 mb-3 fw-bold border-bottom pb-2">Historique</h2>
@@ -41,6 +65,7 @@
         </section>
     </div>
 
+    <!-- Modal -->
     <div class="modal fade" id="expenseModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -80,6 +105,7 @@
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/app.js"></script>
     
@@ -87,17 +113,14 @@
     let allTransactions = [];
     let allCategories = [];
 
-    // CHARGEMENT INITIAL
     document.addEventListener("DOMContentLoaded", async () => {
-        loadNavbar(); // Charge la barre de navigation
+        loadNavbar();
         await Promise.all([loadCategories(), loadTransactions()]);
         calculateStats();
     });
 
-    // 1. Charger les Catégories (pour le select)
     async function loadCategories() {
         try {
-            // CORRECTION ICI : Ajout du préfixe /api
             const res = await fetch('/api/categories/'); 
             allCategories = await res.json();
             const select = document.getElementById('tCategory');
@@ -114,16 +137,23 @@
         } catch(e) { console.error("Erreur chargement catégories", e); }
     }
 
-    // 2. Charger les Transactions
-    async function loadTransactions() {
-        const listContainer = document.getElementById('transactions-list');
-        try {
-            // CORRECTION ICI : La route est /api/transactions/ (et non /transactions/json)
-            const res = await fetch('/api/transactions/'); 
-            
-            if(!res.ok) throw new Error("Erreur API");
-            
-            allTransactions = await res.json(); 
+   async function applyPeriodFilter() {
+    const period = document.getElementById('filterPeriod').value;
+    await loadTransactions(period);
+    calculateStats(); 
+}
+
+
+    async function loadTransactions(period = 'current_month') {
+    const listContainer = document.getElementById('transactions-list');
+
+    try {
+        const url = `/api/transactions/?period=${period}`;
+        const res = await fetch(url);
+
+        if (!res.ok) throw new Error("Erreur API");
+
+        allTransactions = await res.json();
 
             if(allTransactions.length === 0) {
                 listContainer.innerHTML = '<div class="text-center text-muted py-4">Aucune transaction.</div>';
@@ -134,7 +164,7 @@
                 const categoryName = t.category_name || (t.category ? t.category.name : 'Non classé');
                 const isRevenu = (t.category_type === 'revenu');
                 const parentInfo = (t.parent_name && t.parent_name !== 'Autre' && t.parent_name !== categoryName) 
-                                   ? `<span class="text-muted ms-1">(${t.parent_name})</span>` : '';
+ ? `<span class="text-muted ms-1">(${t.parent_name})</span>` : '';
 
                 return `
                 <div class="list-group-item d-flex justify-content-between align-items-center py-3">
@@ -169,15 +199,12 @@
         }
     }
 
-    // 3. Calculer les Stats coté Frontend
     function calculateStats() {
         let depenses = 0;
         let revenus = 0;
 
         allTransactions.forEach(t => {
-            // On vérifie le type via les propriétés disponibles
             const type = t.category_type || (t.category ? t.category.type : 'depense');
-            
             if(type === 'revenu') revenus += t.amount;
             else depenses += t.amount; 
         });
@@ -194,15 +221,13 @@
         `;
     }
 
-    // 4. Gérer le Modal (Création / Edition)
     window.prepareModal = (mode, id = null) => {
         const modalTitle = document.getElementById('modalTitle');
         const form = document.getElementById('transactionForm');
-        
-        if (mode === 'create') {
+        if(mode === 'create') {
             modalTitle.textContent = "Nouvelle transaction";
-            document.getElementById('tId').value = "";
             form.reset();
+            document.getElementById('tId').value = "";
             document.getElementById('tDate').value = new Date().toISOString().split('T')[0];
         } else {
             modalTitle.textContent = "Modifier la transaction";
@@ -211,22 +236,13 @@
                 document.getElementById('tId').value = t.id;
                 document.getElementById('tLabel').value = t.label;
                 document.getElementById('tAmount').value = t.amount;
-                let safeDate = t.date; 
-                if(t.date && t.date.includes('/')) {
-                     // Si format DD/MM/YYYY (renvoyé par certaines routes), on doit convertir pour l'input date
-                     const parts = t.date.split('/');
-                     safeDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                }
+                const safeDate = t.date.includes('/') ? t.date.split('/').reverse().join('-') : t.date;
                 document.getElementById('tDate').value = safeDate;
-                
-                // Si l'objet transaction n'a pas category_id direct mais un objet nested
-                const catId = t.category_id || (t.category ? t.category.id : "");
-                document.getElementById('tCategory').value = catId;
+                document.getElementById('tCategory').value = t.category_id || (t.category ? t.category.id : "");
             }
         }
     };
 
-    // 5. Sauvegarder (POST/PUT via Fetch)
     document.getElementById('transactionForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('tId').value;
@@ -236,10 +252,8 @@
             date: document.getElementById('tDate').value,
             category_id: document.getElementById('tCategory').value || null
         };
-
         const url = id ? `/api/transactions/${id}` : '/api/transactions/';
-        const method = id ? 'PUT' : 'POST'; 
-
+        const method = id ? 'PUT' : 'POST';
         try {
             const res = await fetch(url, {
                 method: method,
@@ -247,27 +261,25 @@
                 body: JSON.stringify(data)
             });
             if(res.ok) {
-                const modalEl = document.getElementById('expenseModal');
-                const modal = bootstrap.Modal.getInstance(modalEl);
-                modal.hide();
-                
-                await loadTransactions(); 
+                bootstrap.Modal.getInstance(document.getElementById('expenseModal')).hide();
+                await loadTransactions(document.getElementById('filterPeriod').value);
                 calculateStats();
-            } else {
-                alert("Erreur lors de l'enregistrement");
-            }
+            } else alert("Erreur lors de l'enregistrement");
         } catch(err) { alert("Erreur réseau"); console.error(err); }
     });
 
-    // 6. Supprimer
     window.deleteTransaction = async (id) => {
         if(!confirm("Supprimer cette transaction ?")) return;
         try {
             await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
-            await loadTransactions();
+            await loadTransactions(document.getElementById('filterPeriod').value);
             calculateStats();
         } catch(e) { alert("Erreur suppression"); }
     };
+
+    function formatMoney(amount) {
+        return new Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR'}).format(amount);
+    }
     </script>
 </body>
 </html>

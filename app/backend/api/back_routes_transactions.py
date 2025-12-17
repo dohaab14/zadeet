@@ -48,6 +48,8 @@ def get_transactions_filtered(
     elif period == "last_3_months":
         start = today - relativedelta(months=3)
         query = query.filter(models.Transaction.date >= start)
+    elif period == "all":
+        pass 
 
     results = query.order_by(models.Transaction.date.desc()).all()
 
@@ -65,7 +67,6 @@ def get_transactions_filtered(
             "category_name": t.category.name if t.category else "Autre",
             "parent_name": parent_name,
             "category_type": t.category.type if t.category else "depense",
-            # Ajout des champs bruts pour l'édition facile dans le modal
             "category_id": t.category_id,
             "date_raw": t.date 
         })

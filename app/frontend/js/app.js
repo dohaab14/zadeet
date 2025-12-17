@@ -16,7 +16,7 @@ function loadNavbar() {
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav me-auto">
-            <li class="nav-item"><a class="nav-link" href="/index.html">Accueil</a></li>
+            <li class="nav-item"><a class="nav-link" href="/">Accueil</a></li>
             <li class="nav-item"><a class="nav-link" href="/transactions.html">Transactions</a></li>
             <li class="nav-item"><a class="nav-link" href="/categories.html">Catégories</a></li>
           </ul>

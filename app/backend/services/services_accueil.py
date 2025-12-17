@@ -155,3 +155,58 @@ def get_category_pie_stats(db: Session):
         "data": data,
         "tooltips": tooltips
     }
+
+def _apply_period_filter(query, period):
+    today = datetime.now()
+
+    if period == "current_month":
+        query = query.filter(
+            extract('year', models.Transaction.date) == today.year,
+            extract('month', models.Transaction.date) == today.month,
+        )
+    elif period == "last_month":
+        last_month = (today.replace(day=1) - timedelta(days=1))
+        query = query.filter(
+            extract('year', models.Transaction.date) == last_month.year,
+            extract('month', models.Transaction.date) == last_month.month,
+        )
+    elif period == "last_3_months":
+        start = today - timedelta(days=90)
+        query = query.filter(models.Transaction.date >= start)
+    # "all" => pas de filtre
+
+    return query
+
+def get_category_totals_filtered(db: Session, period: str, category_id: int | None = None):
+    query = (
+        db.query(
+            models.Category.id.label("category_id"),
+            models.Category.name.label("category_name"),
+            models.Category.type.label("category_type"),
+            func.sum(models.Transaction.amount).label("total"),
+        )
+        .join(models.Transaction, models.Transaction.category_id == models.Category.id)
+    )
+
+    # appliquer le filtre de période
+    query = _apply_period_filter(query, period)
+
+    # appliquer le filtre catégorie si présent
+    if category_id:
+        query = query.filter(models.Category.id == category_id)
+
+    rows = (
+        query
+        .group_by(models.Category.id, models.Category.name, models.Category.type)
+        .all()
+    )
+
+    return [
+        {
+            "category_id": r.category_id,
+            "category_name": r.category_name,
+            "category_type": r.category_type,
+            "total": float(r.total or 0),
+        }
+        for r in rows
+    ]
