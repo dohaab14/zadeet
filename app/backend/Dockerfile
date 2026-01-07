@@ -18,13 +18,10 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 COPY . /code/
 
-# 6. Initialisation de la BDD
 
-RUN python init_db.py
-
-# 7. Exposition du port
+# 6. Exposition du port
 EXPOSE 8000
 
-# 8. Lancement de l'API
+# 7. Lancement de l'API
 
 CMD ["uvicorn", "app.backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

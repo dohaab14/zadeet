@@ -6,6 +6,12 @@ from fastapi.staticfiles import StaticFiles
 # On importe les routeurs situés dans backend/api/
 from .api import back_routes_transactions, back_routes_categories, back_routes_acc
 
+from .db import models          
+from .db.database import engine 
+
+# Création automatique des tables si elles n'existent pas
+models.Base.metadata.create_all(bind=engine)
+
 app = FastAPI(title="Zadeet API")
 
 # --- CONFIGURATION CORS ---
