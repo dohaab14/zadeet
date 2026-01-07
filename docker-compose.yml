@@ -22,8 +22,7 @@ services:
     ports:
       - "80:80" 
     depends_on:
-      backend:
-        condition: service_healthy  # make sure `frontend` is healthy before starting
+      - backend
 
     networks:
       - zadeet-network
