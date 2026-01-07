@@ -1,4 +1,21 @@
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: zadeet_db
+    restart: always
+    environment:
+      - POSTGRES_USER=zadeet_user
+      - POSTGRES_PASSWORD=super_mot_de_passe
+      - POSTGRES_DB=zadeet_db
+    volumes:
+      # Les données seront stockées dans un volume Docker sécurisé (plus de fichier .db qui traîne)
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    
+    networks:
+      - zadeet-network
+
   # Service Backend
   backend:
     container_name: backend_container
@@ -7,9 +24,11 @@ services:
       dockerfile: app/backend/Dockerfile
     ports:
       - "8000:8000"
-    volumes:
-      # Persistance de la base de données
-      - ./budget.db:/code/budget.db #il faut créer un service pour la bd ; sgbd => permettre plusieurs frontend pour un même backend, archi orientée event, permettre accès concurent écriture et lecture ; bd à telle adresse dans le réseau (nom de domaine dans docker compose)
+    depends_on:
+      - db # On attend que la BDD soit prête
+    environment:
+      - DATABASE_URL=postgresql://zadeet_user:super_mot_de_passe@db:5432/zadeet_db
+
     networks:
       - zadeet-network
 
@@ -30,3 +49,6 @@ services:
 networks:
   zadeet-network:
     driver: bridge
+
+volumes:
+  postgres_data:
