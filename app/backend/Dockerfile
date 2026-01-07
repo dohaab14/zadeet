@@ -12,7 +12,7 @@ WORKDIR /code
 # 4. Installation des dépendances
 
 COPY requirements.txt /code/
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+RUN pip install --no-cache-dir --upgrade --default-timeout=1000 -r /code/requirements.txt
 
 # 5. Copie du code source
 

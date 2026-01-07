@@ -83,7 +83,7 @@
                         <div class="row g-2 mb-3">
                             <div class="col-6">
                                 <label class="form-label">Montant (€)</label>
-                                <input type="number" class="form-control" id="tAmount" step="0.01" required>
+                                <input type="number" class="form-control" id="tAmount" step="0.01" min="0.01" required>
                             </div>
                             <div class="col-6">
                                 <label class="form-label">Date</label>
@@ -91,13 +91,16 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Catégorie</label>
+                            <label class="form-label">Catégorie <span class="text-danger">*</span></label>
                             <select class="form-select" id="tCategory">
                                 <option value="">Chargement...</option>
                             </select>
+                            <div class="text-warning small mt-2 d-none" id="noCategoryWarning">
+                                <i class="bi bi-exclamation-triangle"></i> Associez d'abord une catégorie à votre transaction
+                            </div>
                         </div>
                         <div class="text-end">
-                            <button type="submit" class="btn btn-primary px-4">Enregistrer</button>
+                            <button type="submit" class="btn btn-primary px-4" id="submitBtn" disabled>Enregistrer</button>
                         </div>
                     </form>
                 </div>
@@ -117,7 +120,27 @@
         loadNavbar();
         await Promise.all([loadCategories(), loadTransactions()]);
         calculateStats();
+        setupCategoryValidation();
     });
+
+    function setupCategoryValidation() {
+        const categorySelect = document.getElementById('tCategory');
+        const submitBtn = document.getElementById('submitBtn');
+        const warningMsg = document.getElementById('noCategoryWarning');
+
+        const validateCategory = () => {
+            const isCategorySelected = categorySelect.value !== '';
+            submitBtn.disabled = !isCategorySelected;
+            
+            if(isCategorySelected) {
+                warningMsg.classList.add('d-none');
+            } else {
+                warningMsg.classList.remove('d-none');
+            }
+        };
+
+        categorySelect.addEventListener('change', validateCategory);
+    }
 
     async function loadCategories() {
         try {
@@ -134,6 +157,12 @@
                     });
                 }
             });
+            
+            // Réinitialiser la validation après chargement
+            const submitBtn = document.getElementById('submitBtn');
+            const warningMsg = document.getElementById('noCategoryWarning');
+            submitBtn.disabled = true;
+            warningMsg.classList.remove('d-none');
         } catch(e) { console.error("Erreur chargement catégories", e); }
     }
 
@@ -224,11 +253,18 @@
     window.prepareModal = (mode, id = null) => {
         const modalTitle = document.getElementById('modalTitle');
         const form = document.getElementById('transactionForm');
+        const categorySelect = document.getElementById('tCategory');
+        const submitBtn = document.getElementById('submitBtn');
+        const warningMsg = document.getElementById('noCategoryWarning');
+
         if(mode === 'create') {
             modalTitle.textContent = "Nouvelle transaction";
             form.reset();
             document.getElementById('tId').value = "";
             document.getElementById('tDate').value = new Date().toISOString().split('T')[0];
+            categorySelect.value = "";
+            submitBtn.disabled = true;
+            warningMsg.classList.remove('d-none');
         } else {
             modalTitle.textContent = "Modifier la transaction";
             const t = allTransactions.find(x => x.id === id);
@@ -238,7 +274,13 @@
                 document.getElementById('tAmount').value = t.amount;
                 const safeDate = t.date.includes('/') ? t.date.split('/').reverse().join('-') : t.date;
                 document.getElementById('tDate').value = safeDate;
-                document.getElementById('tCategory').value = t.category_id || (t.category ? t.category.id : "");
+                categorySelect.value = t.category_id || (t.category ? t.category.id : "");
+                submitBtn.disabled = categorySelect.value === '';
+                if(categorySelect.value !== '') {
+                    warningMsg.classList.add('d-none');
+                } else {
+                    warningMsg.classList.remove('d-none');
+                }
             }
         }
     };
