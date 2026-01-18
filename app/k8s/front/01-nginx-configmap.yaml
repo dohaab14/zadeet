@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+  namespace: u-grp3
+data:
+  nginx.conf: |
+    events {}
+    http {
+      include /etc/nginx/mime.types;
+      server {
+        listen 80;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        location /js/ { alias /usr/share/nginx/html/js/; }
+        location /static/ { alias /usr/share/nginx/html/static/; }
+
+        location / { try_files $uri $uri/ /index.html; }
+
+        location /api/ {
+          proxy_pass http://backend:8000;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+        }
+      }
+    }

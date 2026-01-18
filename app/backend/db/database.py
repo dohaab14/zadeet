@@ -8,9 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 # On récupère la variable "DATABASE_URL" définie dans le docker-compose.
 # Si elle n'existe pas (ex: test hors docker), on utilise une valeur par défaut locale.
 SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://zadeet_user:super_mot_de_passe@localhost:5432/zadeet_db"
-)
+    "DATABASE_URL")
 
 # 2. Création du Moteur (Engine)
 # Contrairement à SQLite, PostgreSQL gère le multi-thread nativement.

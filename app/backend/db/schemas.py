@@ -10,7 +10,6 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional, List
 
-#TODO: ajouter les schémas pour les plafonds
 
 
 class CategoryBase(BaseModel):
