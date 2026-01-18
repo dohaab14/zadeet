@@ -5,11 +5,11 @@ Ici utilisation de models.py pour interagir avec la bdd
 
 from sqlalchemy.orm import Session
 from datetime import datetime
-from app.db.models import Transaction
-from app.db.schemas import TransactionCreate, TransactionUpdate
+from app.backend.db.models import Transaction
+from app.backend.db.schemas import TransactionCreate, TransactionUpdate
 from . import services_categories
 from sqlalchemy import func, extract
-from app.db.models import Transaction as TransactionModel, Category
+from app.backend.db.models import Transaction as TransactionModel, Category
 
 
 def create_transaction(db: Session, data: TransactionCreate):

@@ -20,14 +20,19 @@
         // === Gestion du Thème Sombre ===
         document.addEventListener('DOMContentLoaded', () => {
             const themeToggle = document.getElementById('themeToggle');
-            const themeIcon = document.getElementById('themeIcon');
-            const html = document.documentElement;
+            
+            if (!themeToggle) {
+                console.error('Bouton themeToggle non trouvé');
+                return;
+            }
             
             // Récupérer le thème sauvegardé (par défaut: clair)
             const savedTheme = localStorage.getItem('theme') || 'light';
             if (savedTheme === 'dark') {
                 document.body.classList.add('dark-theme');
-                themeIcon.textContent = '☀️';
+                themeToggle.textContent = '☀️';
+            } else {
+                themeToggle.textContent = '🌙';
             }
             
             // Bouton de basculement
@@ -35,7 +40,7 @@
                 document.body.classList.toggle('dark-theme');
                 const isDark = document.body.classList.contains('dark-theme');
                 localStorage.setItem('theme', isDark ? 'dark' : 'light');
-                themeIcon.textContent = isDark ? '☀️' : '🌙';
+                themeToggle.textContent = isDark ? '☀️' : '🌙';
             });
         });
     </script>

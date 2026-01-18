@@ -1,30 +1,34 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
-    <a class="navbar-brand" href="/">
-      <img src="/static/logo2.png" alt="Zadeet Logo" class="navbar-logo">
+    <a class="navbar-brand d-flex align-items-center" href="/">
+      <img src="/static/logo.png" 
+           alt="Zadeet Logo" 
+           class="navbar-logo me-2">
+      Zadeet
     </a>
-
-    <div class="collapse navbar-collapse">
+    
+    <div class="d-flex align-items-center gap-2">
+      <button id="themeToggle" class="btn btn-warning" style="font-size: 1.5rem; padding: 0.5rem 0.75rem;">
+        🌙
+      </button>
+      
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    </div>
+    
+    <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-
         <li class="nav-item">
           <a class="nav-link" href="/">Accueil</a>
         </li>
-
         <li class="nav-item">
           <a class="nav-link" href="/transactions/page">Transactions</a>
         </li>
-        <!--
-          <li class="nav-item">
-          <a class="nav-link" href="/plafonds">Plafonds</a>
+        <li class="nav-item">
+          <a class="nav-link" href="/categories/page">Catégories</a>
         </li>
-        -->
-      
-
       </ul>
-      <button id="themeToggle" class="btn btn-outline-light" title="Basculer le thème">
-        <i id="themeIcon" class="bi bi-moon-fill">🌙</i>
-      </button>
     </div>
   </div>
 </nav>
