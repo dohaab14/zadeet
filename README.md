@@ -49,7 +49,7 @@ docker exec -it backend_container python init_db.py
 Utilisation
 Une fois l'application démarrée :
 
-Application Web : http://localhost:80
+Application Web : http://localhost/
 
 Documentation API (Swagger) : http://localhost:8000/docs (si configuré dans FastAPI)
 
