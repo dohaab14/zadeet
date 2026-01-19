@@ -39,9 +39,9 @@
                     <div class="col-md-5">
                         <label class="form-label small text-muted">Période</label>
                         <select id="filterPeriod" class="form-select">
-                            <option value="current_month" selected>Mois en cours</option>
+                            <option value="current_month">Mois en cours</option>
                             <option value="last_month">Mois dernier</option>
-                            <option value="last_3_months">3 derniers mois</option>
+                            <option value="last_3_months" selected>3 derniers mois</option>
                             <option value="all">Tout l'historique</option>
                         </select>
                     </div>
@@ -101,7 +101,7 @@
         await loadDashboard(); 
         
         // Charger liste + totaux avec filtres par défaut
-        await applyFilters(false); 
+        await applyFilters(true); 
     });
 
     // --- A. CHARGEMENT INTELLIGENT (BACKEND) ---
@@ -210,7 +210,8 @@
     }
 
     // --- D. GRAPHIQUES ---
-    function updateChartsFromData(labels, dataRev, dataDep, pieLabels, pieData) {
+    function updateChartsFromData(labels, dataRev, dataDep, pieLabels, pieData, pieDetails = []) {
+        // --- Bar Chart ---
         const ctxBar = document.getElementById('barChart');
         if(barChartInstance) barChartInstance.destroy();
         barChartInstance = new Chart(ctxBar, {
@@ -224,28 +225,124 @@
             }
         });
 
+        // --- Pie Chart ---
         const ctxPie = document.getElementById('pieChart');
         if(pieChartInstance) pieChartInstance.destroy();
+        
         pieChartInstance = new Chart(ctxPie, {
             type: 'doughnut',
             data: {
                 labels: pieLabels,
-                datasets: [{ data: pieData, backgroundColor: ['#0d6efd','#6610f2','#6f42c1','#d63384','#fd7e14','#ffc107','#20c997'] }]
+                datasets: [{ 
+                    data: pieData, 
+                    backgroundColor: ['#0d6efd','#6610f2','#6f42c1','#d63384','#fd7e14','#ffc107','#20c997'],
+                    // On injecte les détails ici
+                    customDetails: pieDetails 
+                }]
+            },
+            options: {
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                // 1. Essayer de récupérer nos détails personnalisés (Sous-catégories)
+                                if (context.dataset.customDetails && context.dataset.customDetails[context.dataIndex]) {
+                                    // Chart.js gère très bien les tableaux : il fera une ligne par sous-catégorie
+                                    return context.dataset.customDetails[context.dataIndex];
+                                }
+                                // 2. Fallback (Affichage standard si pas de détails)
+                                let label = context.label || '';
+                                let value = context.parsed;
+                                return `${label}: ${value} €`;
+                            }
+                        }
+                    }
+                }
             }
         });
     }
 
     function updateChartsFromTransactions(transactions) {
-        const totalRev = transactions.filter(t => t.category_type === 'revenu').reduce((sum, t) => sum + t.amount, 0);
-        const totalDep = transactions.filter(t => t.category_type === 'depense').reduce((sum, t) => sum + t.amount, 0);
+        
+        // --- 1. LOGIQUE POUR LE BAR CHART (HISTORIQUE PAR MOIS) ---
+        const historyData = {}; 
 
-        const catMap = {};
-        transactions.filter(t => t.category_type === 'depense').forEach(t => {
-            const key = t.category_name || 'Autre';
-            catMap[key] = (catMap[key] || 0) + t.amount;
+        transactions.forEach(t => {
+            let year, month;
+            
+            // DÉTECTION DU FORMAT DE DATE
+            if (t.date.includes('/')) {
+                // Cas 1 : Format Français "24/11/2025"
+                const parts = t.date.split('/');
+                // parts[0]=jour, parts[1]=mois, parts[2]=année
+                month = parts[1];
+                year = parts[2];
+            } else {
+                // Cas 2 : Format Standard "2025-11-24"
+                const parts = t.date.split('-');
+                year = parts[0];
+                month = parts[1];
+            }
+
+            // On crée une clé de tri standard "2025-11"
+            const monthKey = `${year}-${month}`;
+
+            if (!historyData[monthKey]) {
+                historyData[monthKey] = { rev: 0, dep: 0 };
+            }
+
+            if (t.category_type === 'revenu') historyData[monthKey].rev += t.amount;
+            if (t.category_type === 'depense') historyData[monthKey].dep += t.amount;
         });
 
-        updateChartsFromData(['Sélection'], [totalRev], [totalDep], Object.keys(catMap), Object.values(catMap));
+        // Tri chronologique des mois
+        const sortedMonths = Object.keys(historyData).sort();
+
+        // Préparation des données Bar Chart
+        const barLabels = sortedMonths.map(m => {
+            // m est "2025-11" -> on affiche "11/2025"
+            const [y, mo] = m.split('-');
+            return `${mo}/${y}`;
+        });
+        const barRev = sortedMonths.map(m => historyData[m].rev);
+        const barDep = sortedMonths.map(m => historyData[m].dep);
+
+
+        // --- 2. LOGIQUE POUR LE PIE CHART (HIÉRARCHIE PARENTS) ---
+        const parentsData = {}; 
+
+        transactions.filter(t => t.category_type === 'depense').forEach(t => {
+            let parentKey = (t.parent_name && t.parent_name !== 'Autre') ? t.parent_name : t.category_name;
+            if (!parentKey) parentKey = 'Autre';
+
+            let subKey = t.category_name || 'Autre';
+
+            if (!parentsData[parentKey]) {
+                parentsData[parentKey] = { total: 0, subs: {} };
+            }
+
+            parentsData[parentKey].total += t.amount;
+
+            if (!parentsData[parentKey].subs[subKey]) parentsData[parentKey].subs[subKey] = 0;
+            parentsData[parentKey].subs[subKey] += t.amount;
+        });
+
+        // On prépare les tableaux pour Chart.js (Pie Chart)
+        const pieLabels = Object.keys(parentsData);
+        const pieValues = pieLabels.map(key => parentsData[key].total);
+        
+        const pieDetails = pieLabels.map(key => {
+            const subCategories = parentsData[key].subs;
+            return Object.keys(subCategories).map(subName => {
+                let amount = subCategories[subName];
+                let amountStr = new Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR'}).format(amount);
+                return `${subName} : ${amountStr}`;
+            });
+        });
+
+        // --- 3. ENVOI FINAL ---
+        // On envoie les données séparées : Bar (par mois) et Pie (par catégorie)
+        updateChartsFromData(barLabels, barRev, barDep, pieLabels, pieValues, pieDetails);
     }
 
     // --- E. UTILITAIRE ---
