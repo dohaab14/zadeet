@@ -142,4 +142,4 @@ docker-compose down -v
 Auteurs
 Zadeet Team – Développement Fullstack
 
-Dernière mise à jour : Architecture Dockerisée (Frontend / Backend séparés).
+Dernière mise à jour : Ajout de la partie Kubernetes
