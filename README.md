@@ -75,6 +75,7 @@ Attention : cette action supprime toutes les données.
 docker-compose down -v
 ```
 ## Partie Kubernetes avec Rancher
+Pour information, toutes nos ressources sont déployées dans le namespace : `u-grp3`
 
 ### 1. Vérifier les images Docker (amd64)
 - dohaab14/zadeet-backend:latest
