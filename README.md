@@ -79,25 +79,61 @@ docker-compose down -v
 ## Structure du Projet
 
 ```text 
-.
-├── app/
-│   ├── backend/          # Code source de l'API Python
-│   │   ├── api/          # Routes (transactions, catégories...)
-│   │   ├── db/           # Modèles et schémas BDD
-│   │   ├── services/     # Logique métier
-│   │   ├── main.py       # Point d'entrée Backend
-│   │   └── Dockerfile
-│   │
-│   └── frontend/         # Code source Interface
-│       ├── templates/    # Fichiers HTML
-│       ├── static/       # CSS, images
-│       ├── js/           # Scripts JavaScript
-│       └── Dockerfile
-│
-├── docker-compose.yml    # Orchestration des services
-├── nginx.conf            # Configuration du serveur web
-├── requirements.txt      # Dépendances Python
-└── init_db.py            # Script d'initialisation BDD
+└──
+    ├── docker-compose.yml
+    ├── init_db.py
+    ├── nginx.conf
+    ├── requirements.txt
+    ├── seed_db.py
+    └── app/
+        ├── schemas.py
+        ├── api/
+        │   └── routes_plafonds.py
+        ├── backend/
+        │   ├── Dockerfile
+        │   ├── main.py
+        │   ├── api/
+        │   │   ├── back_routes_acc.py
+        │   │   ├── back_routes_categories.py
+        │   │   └── back_routes_transactions.py
+        │   ├── db/
+        │   │   ├── database.py
+        │   │   ├── models.py
+        │   │   └── schemas.py
+        │   └── services/
+        │       ├── services_accueil.py
+        │       ├── services_categories.py
+        │       ├── services_plafonds.py
+        │       └── services_transactions.py
+        ├── frontend/
+        │   ├── Dockerfile
+        │   ├── js/
+        │   │   └── app.js
+        │   ├── static/
+        │   │   └── style.css
+        │   └── templates/
+        │       ├── categories.html
+        │       ├── index.html
+        │       └── transactions.html
+        ├── k8s/
+        │   ├── 01-configmap.yaml
+        │   ├── 02-secret.yaml
+        │   ├── backend/
+        │   │   ├── 01-backend-deployment.yaml
+        │   │   └── 02-backend-service.yaml
+        │   ├── db/
+        │   │   ├── 01-postegres-pvc.yaml
+        │   │   ├── 02-postgres-deployment.yaml
+        │   │   └── 03-postgres-service.yaml
+        │   └── front/
+        │       ├── 01-nginx-configmap.yaml
+        │       ├── 02-frontend-deployment.yaml
+        │       └── 03-frontend-service.yaml
+        └── templates/
+            ├── base.html
+            ├── home.html
+            └── navbar.html
+
 ```
 
 
