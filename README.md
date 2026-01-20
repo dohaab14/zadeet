@@ -74,7 +74,23 @@ Attention : cette action supprime toutes les données.
 ```bash
 docker-compose down -v
 ```
+## Partie Kubernetes avec Rancher
 
+### 1. Vérifier les images Docker (amd64)
+- dohaab14/zadeet-backend:latest
+- dohaab14/zadeet-frontend:latest
+### 2. Ajouter les secrets de la base de données
+```
+kubectl -n u-grp3 create secret generic zadeet-secrets --from-literal=DATABASE_USER=zadeet_user  --from-literal=DATABASE_PASSWORD=(le mdp) --from-literal=DATABASE_NAME=zadeet_db
+```
+
+### 3. Déployer les manifests k8s 
+/!\ faire la commande de puis le folder k8s\
+`kubectl apply -R -f k8s/ `
+
+### 4. Test de l'application
+
+`kubectl port-forward -n u-grp3 svc/frontend 8080:80`
 
 ## Structure du Projet
 
