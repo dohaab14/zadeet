@@ -90,11 +90,16 @@ kubectl -n u-grp3 create secret generic zadeet-secrets --from-literal=DATABASE_U
 `kubectl apply -R -f k8s/ `
 
 ### 4. Test de l'application
+
+Si vous êtes sur Linux : </br>
 Récupérer l'IP pour le DNS
 `kubectl get ingress -n u-grp3`
 Ajouter ceci dans /etc/hosts
 `IP zadeet.u-grp3.csc8567.org`
 Ouvrir un navigateur et taper `zadeet.u-grp3.csc8567.org`
+
+sinon :
+`kubectl port-forward -n u-grp3 svc/frontend 8080:80`
 
 ## Structure du Projet
 
