@@ -20,6 +20,7 @@ Le projet est divisé en trois services Docker distincts :
 
 - **Docker** installé sur votre machine
 - **Git** pour cloner le projet
+- **Remplir** les variables du .env (réf à .env.exemple)
 
 ---
 
@@ -82,7 +83,7 @@ Pour information, toutes nos ressources sont déployées dans le namespace : `u-
 - dohaab14/zadeet-frontend:latest
 ### 2. Ajouter les secrets de la base de données
 ```
-kubectl -n u-grp3 create secret generic zadeet-secrets --from-literal=DATABASE_USER=zadeet_user  --from-literal=DATABASE_PASSWORD=(le mdp) --from-literal=DATABASE_NAME=zadeet_db
+kubectl -n u-grp3 create secret generic zadeet-secrets --from-literal=DATABASE_USER=ÀREMPLIRE  --from-literal=DATABASE_PASSWORD=ÀREMPLIRE --from-literal=DATABASE_NAME=ÀREMPLIRE
 ```
 
 ### 3. Déployer les manifests k8s 
