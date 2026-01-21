@@ -86,12 +86,15 @@ kubectl -n u-grp3 create secret generic zadeet-secrets --from-literal=DATABASE_U
 ```
 
 ### 3. Déployer les manifests k8s 
-/!\ faire la commande de puis le folder k8s\
+/!\ faire la commande depuis le folder app\
 `kubectl apply -R -f k8s/ `
 
 ### 4. Test de l'application
-
-`kubectl port-forward -n u-grp3 svc/frontend 8080:80`
+Récupérer l'IP pour le DNS
+`kubectl get ingress -n u-grp3`
+Ajouter ceci dans /etc/hosts
+`IP zadeet.u-grp3.csc8567.org`
+Ouvrir un navigateur et taper `zadeet.u-grp3.csc8567.org`
 
 ## Structure du Projet
 
@@ -135,6 +138,7 @@ kubectl -n u-grp3 create secret generic zadeet-secrets --from-literal=DATABASE_U
         ├── k8s/
         │   ├── 01-configmap.yaml
         │   ├── 02-secret.yaml
+        │   ├── ingress.yaml
         │   ├── backend/
         │   │   ├── 01-backend-deployment.yaml
         │   │   └── 02-backend-service.yaml
