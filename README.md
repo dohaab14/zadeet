@@ -28,7 +28,7 @@ Le projet est divisé en trois services Docker distincts :
 ### 1. Cloner le projet
 
 ```bash
-git clone https://github.com/votre-compte/zadeet.git
+git clone https://github.com/dohaab14/zadeet.git
 cd zadeet
 ```
 
