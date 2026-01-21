@@ -20,7 +20,7 @@ Le projet est divisé en trois services Docker distincts :
 
 - **Docker** installé sur votre machine
 - **Git** pour cloner le projet
-- **Remplir** les variables du .env (réf à .env.exemple)
+- **Remplir** les variables du .env (réf à .env.exemple) : `cp .env.example .env`
 
 ---
 
